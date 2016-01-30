@@ -1,5 +1,7 @@
 #include "backtest.h"
-
+void backtest (const struct macrostrategy *strat, const Portfolio *port,
+        const char *startdate, const char *enddate){
+}
 int main () {
     struct macrostrategy strat; 
     struct action *result;
