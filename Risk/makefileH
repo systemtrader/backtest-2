@@ -1,0 +1,4 @@
+bs: main.hs
+	ghc -O2 main.hs -o bs
+clean:
+	rm *.o && rm *.hi
