@@ -96,7 +96,7 @@ static size_t getaction (const Portfolio *cuport, Portfolio *newport,
 void runstrategy (const Portfolio *cuport,  Portfolio *newport, 
         const struct macrostrategy *strat, struct action *todo,
         const char *lastdate){
-    sqlite3 * db;
+    sqlite3 * db = 0;
     sqlite3_stmt *stmt;
     int rc; 
     size_t i, ntodo;
@@ -166,7 +166,7 @@ void runstrategy (const Portfolio *cuport,  Portfolio *newport,
     //printf("Count: %d\n", i);
     newport->portsize = strat->portsize;
     ntodo = getaction (cuport,newport, strat, todo);
-    printportfolio(newport);
+   // printportfolio(newport);
     printaction(todo, ntodo);
     sqlite3_finalize(stmt);
     sqlite3_close(db);

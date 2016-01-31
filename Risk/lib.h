@@ -36,8 +36,28 @@ static inline time_t daytotime (const char *date, const char *dateformat){
 
 static inline void timetoday (time_t thetime, char *date, 
         const char *dateformat, size_t sizeofdate){
-    struct tm datetm = *(localtime( &thetime));
+    struct tm datetm = {0};
+    datetm = *(localtime( &thetime));
     strftime(date, sizeofdate + 1, 
             dateformat, &datetm);
 }
+static inline void datetotm (const char *date, struct tm *t){
+    unsigned int day, mon, year;
+    sscanf(date,"%4d%2d%2d", &year, &mon, &day);
+    t->tm_year = year - 1900;
+    t->tm_mon = mon - 1;
+    t->tm_mday = day;
+}
+static inline void inc_day(char *source, unsigned int days){
+    struct tm t = {0};
+    datetotm(source, &t);
+    t.tm_mday += days;
+    mktime(&t);
+    sprintf(source, "%4i%02i%02i", 
+            t.tm_year + 1900, t.tm_mon +1,
+            t.tm_mday);
+}
+
+
+
 #endif  /*LIB_H*/
