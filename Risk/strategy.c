@@ -1,7 +1,8 @@
 #include "strategy.h"
-static size_t getaction(Portfolio *, struct portfolio *, struct macrostrategy *,
+
+static size_t getaction(const Portfolio *, struct portfolio *, const struct macrostrategy *,
         struct action *);
-static void allocatewealth (struct macrostrategy *, Portfolio *,
+static void allocatewealth (const struct macrostrategy *, Portfolio *,
         const double);
 
 void printaction(const Action *todo, size_t ntodo){
@@ -39,7 +40,7 @@ void printportfolio(const Portfolio *port){
     puts("");
 }
 
-static void allocatewealth (struct macrostrategy *strat, 
+static void allocatewealth (const struct macrostrategy *strat, 
         Portfolio *newport, const double portvalue){
     double persharealloc;
     size_t i;
@@ -56,8 +57,8 @@ static void allocatewealth (struct macrostrategy *strat,
     ++(newport->portsize);
 }
 
-static size_t getaction (Portfolio *cuport, Portfolio *newport, 
-        struct macrostrategy *strat, struct action *todo){
+static size_t getaction (const Portfolio *cuport, Portfolio *newport, 
+        const struct macrostrategy *strat, struct action *todo){
    size_t i, j, k;
    double portval;
    bool exists;
@@ -92,15 +93,15 @@ static size_t getaction (Portfolio *cuport, Portfolio *newport,
    return (k + cuport->portsize);
 }
 
-void runstrategy (Portfolio *cuport, Portfolio *newport, 
-        struct macrostrategy *strat, struct action *todo,
+void runstrategy (const Portfolio *cuport,  Portfolio *newport, 
+        const struct macrostrategy *strat, struct action *todo,
         const char *lastdate){
     sqlite3 * db;
     sqlite3_stmt *stmt;
     int rc; 
     size_t i, ntodo;
     char sql[SQLMAX];
-    char  begindate[DATELENGTH],
+    char  begindate[DAYMAX],
          order[32];
     time_t lasttime, begintime;
     struct tm lasttm = {0}, begintm ={0};
@@ -112,11 +113,12 @@ void runstrategy (Portfolio *cuport, Portfolio *newport,
     const char *tailsql = " limit ?103;";
    
     //Get most recent data date
-    rc = sqlite3_open(DBNAME, &db);
+    rc = sqlite3_open_v2(DBNAME, &db, SQLITE_OPEN_READONLY, NULL);
+    //printf("Error code: %d\n", rc);
     /*sqlite3_get_table(db, GETDATESQL,
             &result, &nrows, &ncols,&errmsg);
 
-    strncpy(lastdate, result[1], DATELENGTH);
+    strncpy(lastdate, result[1], DAYMAX);
     sqlite3_free_table(result);*/
 
     //Obtain the start date from the strategy
@@ -125,24 +127,31 @@ void runstrategy (Portfolio *cuport, Portfolio *newport,
     lasttime = mktime(&lasttm);
     begintime = lasttime - DAYTOSEC(strat->period);
     begintm = *(localtime( &begintime));
-    strftime(begindate, sizeof(begindate), 
+    strftime(begindate, DAYMAX, 
             DAYFORMAT, &begintm);
 
     //Prepare and bind sql statement 
     if(strat->direction == HIGHEST)
-        strncpy(order,"desc", sizeof("desc"));
+        strcpy(order,"desc");
     else
-        strncpy(order,"asc", sizeof("asc"));
+        strcpy(order,"asc");
+    //puts(order);
     strcpy(sql, headsql);
     strcat(sql, order);
     strcat(sql, tailsql);
-    sqlite3_prepare_v2(db, sql,
-            strlen(sql), &stmt, NULL);
-    sqlite3_bind_text(stmt, 100, lastdate, strlen(lastdate),
+
+    //puts(sql);
+
+    rc = sqlite3_prepare_v2(db, sql,
+            strlen(sql)+1, &stmt, NULL);
+
+    //printf("Prepare code: %d\n", rc);
+    sqlite3_bind_text(stmt, 100, lastdate, DAYMAX,
             SQLITE_TRANSIENT);
-    sqlite3_bind_text(stmt, 101, begindate, strlen(begindate),
+    sqlite3_bind_text(stmt, 101, begindate, DAYMAX,
             SQLITE_TRANSIENT);
     sqlite3_bind_int(stmt, 103, strat->portsize);
+    //printf("%d\n",strat->portsize);
 
     //Prepare the result struct
     rc = sqlite3_step(stmt);
@@ -154,11 +163,12 @@ void runstrategy (Portfolio *cuport, Portfolio *newport,
         rc = sqlite3_step(stmt);
         i++;
     }
-    sqlite3_finalize(stmt);
+    //printf("Count: %d\n", i);
     newport->portsize = strat->portsize;
     ntodo = getaction (cuport,newport, strat, todo);
     printportfolio(newport);
     printaction(todo, ntodo);
+    sqlite3_finalize(stmt);
     sqlite3_close(db);
 }
 /*
@@ -171,7 +181,7 @@ int main (int argc, char *argv[]) {
     Record recoi = {.asset = oibr, .shares = 50};
     struct portfolio port = {.records[0] = rec, .records[1] = recoi, .portsize = 2};
     Portfolio newport = port;
-    const char *lastdate "20141231";
+    const char *lastdate = "20141231";
     strat.period = 7;
     strat.portsize = 2;
     strat.direction = HIGHEST;

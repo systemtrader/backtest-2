@@ -2,8 +2,8 @@
 #define PORTFOLIO_H
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
 #include "lib.h"
+#include <time.h>
 
 #define RECORDMAX 512
 
@@ -23,6 +23,6 @@ typedef struct portfolio {
     Record records [RECORDMAX];
 } Portfolio;
 
-double valueportfolio (struct portfolio *port);
+double valueportfolio (const struct portfolio *port);
 
 #endif  /*PORTFOLIO_H*/

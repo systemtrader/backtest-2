@@ -1,8 +1,12 @@
 #ifndef STRATEGY_H
 #define STRATEGY_H
 
+#ifndef _GNU_XOPEN_
+#define _GNU_XOPEN_
 #define __USE_XOPEN
 #define _GNU_SOURCE
+#endif //_GNU_XOPEN_
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -35,10 +39,11 @@ typedef struct macrostrategy {
     Allocation allocation;
 } MacroStrategy;
 
-void runstrategy (struct portfolio *, Portfolio *,
-        struct macrostrategy *, struct action *,
+void runstrategy ( const struct portfolio *, Portfolio *,
+         const struct macrostrategy *, struct action *,
         const char *);
 
 void printportfolio(const Portfolio *);
 void printaction(const Action *, size_t );
+
 #endif  /*STRATEGY_H*/

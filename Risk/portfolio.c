@@ -1,6 +1,6 @@
 #include "portfolio.h"
 
-double valueportfolio (struct portfolio *port){
+double valueportfolio (const struct portfolio *port){
     float res = 0;
     size_t i;
     for (i = 0; i < port->portsize ; i++)
