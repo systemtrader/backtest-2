@@ -3,7 +3,7 @@ void backtest (const struct macrostrategy *strat, const Portfolio *port,
         const char *startdate, const char *enddate){
     char curdate[DAYMAX] = {0} ;
     Action *action = (Action *) malloc (sizeof(Action) * 
-            (strat->portsize + port->portsize + 1));
+            (strat->portsize * port->portsize + 1));
     Portfolio curport = *port;
     Portfolio nextport = {0};
     strcpy(curdate, startdate);
@@ -28,7 +28,7 @@ int main () {
     const char *firstdate = "20141203";
     memset(&strat, 0 , sizeof strat);
     strat.period = 5;
-    strat.portsize = 2;
+    strat.portsize = 10;
     strat.direction = HIGHEST;
     backtest(&strat, &port, firstdate, lastdate);
     return 0;

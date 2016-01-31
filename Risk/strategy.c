@@ -114,12 +114,6 @@ void runstrategy (const Portfolio *cuport,  Portfolio *newport,
    
     //Get most recent data date
     rc = sqlite3_open_v2(DBNAME, &db, SQLITE_OPEN_READONLY, NULL);
-    //printf("Error code: %d\n", rc);
-    /*sqlite3_get_table(db, GETDATESQL,
-            &result, &nrows, &ncols,&errmsg);
-
-    strncpy(lastdate, result[1], DAYMAX);
-    sqlite3_free_table(result);*/
 
     //Obtain the start date from the strategy
     //and the last data dates
@@ -135,23 +129,18 @@ void runstrategy (const Portfolio *cuport,  Portfolio *newport,
         strcpy(order,"desc");
     else
         strcpy(order,"asc");
-    //puts(order);
     strcpy(sql, headsql);
     strcat(sql, order);
     strcat(sql, tailsql);
 
-    //puts(sql);
-
     rc = sqlite3_prepare_v2(db, sql,
             strlen(sql)+1, &stmt, NULL);
 
-    //printf("Prepare code: %d\n", rc);
     sqlite3_bind_text(stmt, 100, lastdate, DAYMAX,
             SQLITE_TRANSIENT);
     sqlite3_bind_text(stmt, 101, begindate, DAYMAX,
             SQLITE_TRANSIENT);
     sqlite3_bind_int(stmt, 103, strat->portsize);
-    //printf("%d\n",strat->portsize);
 
     //Prepare the result struct
     rc = sqlite3_step(stmt);
@@ -163,11 +152,10 @@ void runstrategy (const Portfolio *cuport,  Portfolio *newport,
         rc = sqlite3_step(stmt);
         i++;
     }
-    //printf("Count: %d\n", i);
     newport->portsize = strat->portsize;
     ntodo = getaction (cuport,newport, strat, todo);
-   // printportfolio(newport);
     printaction(todo, ntodo);
+    printportfolio(newport);
     sqlite3_finalize(stmt);
     sqlite3_close(db);
 }
