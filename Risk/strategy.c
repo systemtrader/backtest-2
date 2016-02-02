@@ -57,21 +57,20 @@ static double liquidateport (const Portfolio * const port,
     strcpy(sqlstr, sql);
     strcat(sqlstr, marks);
     
-    rc = sqlite3_open_v2(DBNAME, &db, 
-            SQLITE_OPEN_READONLY, NULL);
+//    rc = sqlite3_open_v2(DBNAME, &db, 
+  //          SQLITE_OPEN_READONLY, NULL);
 
-    if (rc != SQLITE_OK){
+    /*if (rc != SQLITE_OK){
         printf("open db: rc = %d\n", rc);
         sqlite3_close(db);
         //printf("%s\n", sqlite3_sql(stmt));
         exit(EXIT_FAILURE);
-    }
+    }*/
   
     rc = sqlite3_prepare_v2(db, sqlstr,
             strlen(sqlstr) + 1, &stmt, NULL);
     if (rc != SQLITE_OK){
         printf("prepare: rc = %d\n", rc);
-        sqlite3_close(db);
         exit(EXIT_FAILURE);
     }
     rc = sqlite3_bind_text(stmt,1, date, DAYMAX,
@@ -79,21 +78,24 @@ static double liquidateport (const Portfolio * const port,
 
     if (rc != SQLITE_OK){
         printf("bind: rc = %d\n", rc);
-        sqlite3_close(db);
         exit(EXIT_FAILURE);
     }
 
-    for (i = 0; i < port->portsize - cashcount; i++){
-        buf = s
-        rc = sqlite3_bind_text(stmt,2 + i, date, DAYMAX,
+    for (buf = syms, i = j = 0; i < port->portsize - cashcount; i++){
+        while (buf[j] != ' ')
+            j++;
+        buf[j] = '\0';
+        rc = sqlite3_bind_text(stmt,2 + i, buf , DAYMAX,
             SQLITE_TRANSIENT);
-
-
-
+        if (rc != SQLITE_OK){
+            printf("inner bind: rc = %d \t item: %d\n ", rc, i);
+            sqlite3_close(db);
+            exit(EXIT_FAILURE);
+        }
+        buf += (j+1); j = 0;
     }
     printf("%s\n", sqlite3_sql(stmt));
     sqlite3_finalize(stmt);
-    sqlite3_close(db);
     free(marks);
     free(syms);
     return value;
