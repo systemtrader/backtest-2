@@ -46,10 +46,10 @@ typedef struct macrostrategy {
     Allocation allocation;
 } MacroStrategy;
 
-void runstrategy ( const struct portfolio * const, Portfolio *,
+void runstrategy ( struct portfolio * const, Portfolio *,
          const struct macrostrategy *, struct action *,
         const char *);
 
 void printportfolio(const Portfolio *);
-void printaction(const Action *, size_t );
+//void printaction(const Action *, size_t );
 #endif  /*STRATEGY_H*/

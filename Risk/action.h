@@ -12,6 +12,9 @@ typedef struct action {
     char  symbol[SYMBOLMAX];
     Transaction action;
     unsigned int shares;
+    double price;
+    double totalprice;
+    char date[DAYMAX];
 } Action;
 
 #endif  /*ACTIONS_H*/
