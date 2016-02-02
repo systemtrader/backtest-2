@@ -7,13 +7,12 @@ static void allocatewealth (const struct macrostrategy *,
         Portfolio *,
         const double);*/
 
-static double liquidateport (const Portfolio * const port, 
-        const char *date, const sqlite3 *db){
+static double liquidateport (Portfolio * const port, 
+        const char *date, sqlite3 *db){
     sqlite3_stmt *stmt = NULL;
-    double value = 0;
     size_t msize, ssize, i, j = 0 , k,  cashcount;
-    unsigned int rc = 0;
-    char *syms, *buf;
+    unsigned int rc = 0, found;
+    char (*syms)[SYMBOLMAX];
     char *marks, sqlstr[SQLMAX] = {0}; 
     char sql [] =
         "select symbol, price from"
@@ -26,12 +25,11 @@ static double liquidateport (const Portfolio * const port,
     for (cashcount = i = 0; i < port->portsize; i++)
         if (port->records[i].asset.type == CASH)
             cashcount++;
+
     msize = ssize = port->portsize - cashcount;
-
     msize = 2 * msize;
-    ssize = (ssize * SYMBOLMAX) + ssize ;
 
-    if ((syms = calloc(ssize, ssize * sizeof(char))) == NULL){
+    if ((syms = malloc(ssize * sizeof(char[SYMBOLMAX]))) == NULL){
         perror("liquidateport: calloc failed");
         exit(EXIT_FAILURE);
     }
@@ -47,13 +45,10 @@ static double liquidateport (const Portfolio * const port,
             break;
         marks[k] = '?';
         marks[++k] = ',';
-        strcpy(syms + i, port->records[j].asset.symbol);
-        i += strlen(syms + i);
-        syms [i] = ' ';
+        strcpy(syms[i], port->records[j].asset.symbol);
     }
     marks[k] = ';';
     marks[--k] = ')';
-    syms[--i] = '\0';
     strcpy(sqlstr, sql);
     strcat(sqlstr, marks);
     
@@ -81,40 +76,76 @@ static double liquidateport (const Portfolio * const port,
         exit(EXIT_FAILURE);
     }
 
-    for (buf = syms, i = j = 0; i < port->portsize - cashcount; i++){
-        while (buf[j] != ' ')
-            j++;
-        buf[j] = '\0';
-        rc = sqlite3_bind_text(stmt,2 + i, buf , DAYMAX,
+    for (i = 0; i < port->portsize - cashcount; i++){
+        rc = sqlite3_bind_text(stmt,2 + i, syms[i] , DAYMAX,
             SQLITE_TRANSIENT);
         if (rc != SQLITE_OK){
             printf("inner bind: rc = %d \t item: %d\n ", rc, i);
-            sqlite3_close(db);
             exit(EXIT_FAILURE);
         }
-        buf += (j+1); j = 0;
     }
-    printf("%s\n", sqlite3_sql(stmt));
+
+    rc = sqlite3_step(stmt);
+    i = 0;
+    while (rc == SQLITE_ROW){
+        if (strcmp(port->records[i].asset.symbol, 
+                (char *)sqlite3_column_text(stmt, 0)) != 0){
+            for (found = j = 0; j < port->portsize ; j ++){
+                if (strcmp(port->records[j].asset.symbol, 
+                (char *)sqlite3_column_text(stmt, 0)) == 0){
+                    port->records[j].asset.price  
+                        = sqlite3_column_double(stmt, 1);
+                    found = 1;
+                    break;
+                }
+            }
+            if (!found){
+                perror ("at least one symbol could not be matched");
+                exit(EXIT_FAILURE);
+            }
+        }
+        port->records[i].asset.price  
+            = sqlite3_column_double(stmt, 1);
+        rc = sqlite3_step(stmt);
+        i++;
+    }
+ 
+    //printf("%s\n", sqlite3_sql(stmt));
     sqlite3_finalize(stmt);
     free(marks);
     free(syms);
-    return value;
+    return valueportfolio(port);
 }
 
 
-void printaction(const Action *todo, size_t ntodo){
+static void printaction(const Action *todo, size_t ntodo, const char *date){
     #define PRTTRANS(X) ((X) == BUY ? "BUY" : "SELL") 
+    double totbought, totsold;
     size_t i = 0;
     //puts("\nThe following orders will be executed.");
-    
-    printf("\n%-8s \t %-8s \t %6s\n","Symbol","Todo","Shares");
-    printf("%-8s \t %-8s \t %6s\n","------","----","------");
+    printf("\nTransaction date: %s\n",date);
+    puts("--------------------------------------------------------------------------");
+    printf("%-8s \t %-8s \t %6s \t %8s \t %8s\n","Symbol","Todo","Shares", "Price", "Total");
+    printf("%-8s \t %-8s \t %6s \t %8s \t %8s\n","------","----","------", "-----", "-----");
     for ( ; i < ntodo ; i++){
-        printf("%-8s \t %-8s \t %6d\n",
+        printf("%-8s \t %-8s \t %6d \t %8.2f \t %8.2f\n",
                 todo[i].symbol, PRTTRANS(todo[i].action),
-                todo[i].shares);
+                todo[i].shares,
+                todo[i].price,
+                todo[i].totalprice);
     }
-    puts("");
+
+    puts("--------------------------------------------------------------------------");
+    for (i = 0, totbought = totsold = 0.0; i < ntodo; i++){
+        if (todo[i].action == BUY)
+            totbought += todo[i].totalprice;
+        else
+            totsold += todo[i].totalprice;
+    }
+    printf("Total bought: %f\nTotal sold: %f\nNet Gain: %f\n", 
+            totbought, totsold, totsold - totbought);
+    puts("--------------------------------------------------------------------------");
+
     #undef PRTTRANS
 }
 
@@ -138,13 +169,14 @@ void printportfolio(const Portfolio *port){
 }
 
 static void printout (const Portfolio *port, 
-        const Action *todo, size_t ntodo,  PrintFlag f){
+        const Action *todo, size_t ntodo,  
+        const char * date, PrintFlag f){
     if (f == TODO)
-        printaction(todo, ntodo);
+        printaction(todo, ntodo, date);
     else if (f == PORT)
         printportfolio(port);
     else if (f == BOTH){
-        printaction(todo, ntodo);
+        printaction(todo, ntodo, date);
         printportfolio(port);
     }else if (f == NONE)
         ;
@@ -171,24 +203,25 @@ static void allocatewealth (const struct macrostrategy *strat,
     ++(newport->portsize);
 }
 
-static size_t getaction (const Portfolio *cuport, 
+static size_t getaction (Portfolio * const cuport, 
         Portfolio *newport, 
         const struct macrostrategy *strat, 
         struct action *todo,
         const char *curdate, 
-        const sqlite3 *db){
-   size_t i, j, k;
+        sqlite3 *db){
+   size_t i, j, k, ntodo;
    double portval;
    bool exists;
 
-   liquidateport(cuport, curdate, db);
-   portval = valueportfolio(cuport);
+   portval = liquidateport(cuport, curdate, db);
+   //printf("%f\n", portval);
    allocatewealth (strat, newport, portval);
    for (i = 0; i < cuport->portsize; i++){
        strcpy(todo[i].symbol, 
                cuport->records[i].asset.symbol); 
        todo[i].action = SELL;
        todo[i].shares = cuport->records[i].shares;
+       todo[i].price = cuport->records[i].asset.price;
    }
    for (k = 0, i = 0; i < newport->portsize; i++){
        exists = false;
@@ -203,6 +236,7 @@ static size_t getaction (const Portfolio *cuport,
                        newport->records[i].shares - 
                        todo[j].shares;
                    todo[j].action = BUY;
+                   todo[j].price = newport->records[i].asset.price;
                }
                break;
            }
@@ -212,13 +246,18 @@ static size_t getaction (const Portfolio *cuport,
            todo[k + cuport->portsize].action = BUY;
            todo[k + cuport->portsize].shares = 
                newport->records[i].shares;
+           todo[k + cuport->portsize].price = 
+               newport->records[i].asset.price;
            k++;
        }
    }
-   return (k + cuport->portsize);
+   ntodo =  (k + cuport->portsize);
+   for (i = 0; i < ntodo; i ++)
+       todo[i].totalprice = todo[i].shares *todo[i].price;
+   return ntodo;
 }
 
-void runstrategy (const Portfolio * const cuport,  
+void runstrategy (Portfolio * const cuport,  
         Portfolio *newport, 
         const struct macrostrategy *strat, 
         struct action *todo,
@@ -287,7 +326,7 @@ void runstrategy (const Portfolio * const cuport,
     newport->portsize = strat->portsize;
     ntodo = getaction (cuport,newport, 
             strat, todo, lastdate, db);
-    printout(newport, todo, ntodo, NONE); 
+    printout(newport, todo, ntodo, lastdate, TODO); 
     sqlite3_finalize(stmt);
     sqlite3_close(db);
 }
