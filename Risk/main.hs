@@ -7,6 +7,7 @@ import Lib
 import Control.Monad
 import Print
 import Text.PrettyPrint.Boxes
+import SqlInterface
 
 backTest' dbName daysBtwTrans portfolioSize startWealth = 
     connectSqlite3 dbName >>= \conn -> quickQuery' conn getDateSqlStr [] 
@@ -26,7 +27,7 @@ backTest' dbName daysBtwTrans portfolioSize startWealth =
 main :: IO ()
 main = getArgs
     >>= \argv -> 
-        let dbName = argv !! 0 
+        let dbName = databaseName 
             execInt = Day (read (argv !! 1):: Integer)  
             size = (read (argv !! 2)) :: Integer
             wealth  = (read (argv !! 3)) :: Double

@@ -8,6 +8,7 @@
 #endif  /*_GNU_XOPEN_*/
 #include <time.h>
 #include <string.h>
+#include <assert.h>
 #define DAYFORMAT "%Y%m%d"
 #define DAYMAX 9
 #define DAYTOSEC(x) (x * 86400)
