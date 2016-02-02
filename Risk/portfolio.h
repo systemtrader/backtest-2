@@ -7,10 +7,17 @@
 
 #define RECORDMAX 512
 
+typedef enum securitytype {
+    EQUITY,
+    CASH,
+    BOND
+} SecurityType;
+
 typedef struct security {
     char symbol[SYMBOLMAX];
     float price;
     float target;
+    SecurityType type;
 } Security;
 
 typedef struct portfoliorecord{

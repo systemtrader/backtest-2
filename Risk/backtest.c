@@ -57,7 +57,7 @@ void backtest (const struct macrostrategy *strat, const Portfolio *port,
 int main (int argc, char *argv[]) {
     struct macrostrategy strat; 
     struct security oibr = {.symbol = "OIBR", .price = 3.25};
-    struct security cash = {.symbol = "USD", .price =1};
+    struct security cash = {.symbol = "USD", .price =1, .type = CASH};
     Record rec = {.asset = cash, .shares = 1000};
     Record recoi = {.asset = oibr, .shares = 50};
     struct portfolio port = {.records[0] = rec, 

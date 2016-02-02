@@ -1,9 +1,104 @@
 #include "strategy.h"
 
-static size_t getaction(const Portfolio *, struct portfolio *, const struct macrostrategy *,
+/*static size_t getaction(const Portfolio *, struct portfolio *, 
+        const struct macrostrategy *,
         struct action *);
-static void allocatewealth (const struct macrostrategy *, Portfolio *,
-        const double);
+static void allocatewealth (const struct macrostrategy *, 
+        Portfolio *,
+        const double);*/
+
+static double liquidateport (const Portfolio * const port, 
+        const char *date, const sqlite3 *db){
+    sqlite3_stmt *stmt = NULL;
+    double value = 0;
+    size_t msize, ssize, i, j = 0 , k,  cashcount;
+    unsigned int rc = 0;
+    char *syms, *buf;
+    char *marks, sqlstr[SQLMAX] = {0}; 
+    char sql [] =
+        "select symbol, price from"
+        " minireturn where"
+        " date = ? and symbol in (";
+    if (port->portsize == 1 &&
+            port->records[0].asset.type == CASH)
+        return valueportfolio(port);
+
+    for (cashcount = i = 0; i < port->portsize; i++)
+        if (port->records[i].asset.type == CASH)
+            cashcount++;
+    msize = ssize = port->portsize - cashcount;
+
+    msize = 2 * msize;
+    ssize = (ssize * SYMBOLMAX) + ssize ;
+
+    if ((syms = calloc(ssize, ssize * sizeof(char))) == NULL){
+        perror("liquidateport: calloc failed");
+        exit(EXIT_FAILURE);
+    }
+    if ((marks = calloc(msize, msize * sizeof(char))) == NULL){
+        perror("liquidateport: calloc failed");
+        exit(EXIT_FAILURE);
+    }
+
+    for (k  = i = j = 0; j < port->portsize ; i++, j++, k++){
+        while (port->records[j].asset.type == CASH)
+            j++;
+        if (j >= port->portsize)
+            break;
+        marks[k] = '?';
+        marks[++k] = ',';
+        strcpy(syms + i, port->records[j].asset.symbol);
+        i += strlen(syms + i);
+        syms [i] = ' ';
+    }
+    marks[k] = ';';
+    marks[--k] = ')';
+    syms[--i] = '\0';
+    strcpy(sqlstr, sql);
+    strcat(sqlstr, marks);
+    
+    rc = sqlite3_open_v2(DBNAME, &db, 
+            SQLITE_OPEN_READONLY, NULL);
+
+    if (rc != SQLITE_OK){
+        printf("open db: rc = %d\n", rc);
+        sqlite3_close(db);
+        //printf("%s\n", sqlite3_sql(stmt));
+        exit(EXIT_FAILURE);
+    }
+  
+    rc = sqlite3_prepare_v2(db, sqlstr,
+            strlen(sqlstr) + 1, &stmt, NULL);
+    if (rc != SQLITE_OK){
+        printf("prepare: rc = %d\n", rc);
+        sqlite3_close(db);
+        exit(EXIT_FAILURE);
+    }
+    rc = sqlite3_bind_text(stmt,1, date, DAYMAX,
+      SQLITE_TRANSIENT);
+
+    if (rc != SQLITE_OK){
+        printf("bind: rc = %d\n", rc);
+        sqlite3_close(db);
+        exit(EXIT_FAILURE);
+    }
+
+    for (i = 0; i < port->portsize - cashcount; i++){
+        buf = s
+        rc = sqlite3_bind_text(stmt,2 + i, date, DAYMAX,
+            SQLITE_TRANSIENT);
+
+
+
+    }
+    printf("%s\n", sqlite3_sql(stmt));
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
+    free(marks);
+    free(syms);
+    return value;
+}
+
 
 void printaction(const Action *todo, size_t ntodo){
     #define PRTTRANS(X) ((X) == BUY ? "BUY" : "SELL") 
@@ -40,7 +135,8 @@ void printportfolio(const Portfolio *port){
     puts("");
 }
 
-static void printout (const Portfolio *port, const Action *todo, size_t ntodo,  PrintFlag f){
+static void printout (const Portfolio *port, 
+        const Action *todo, size_t ntodo,  PrintFlag f){
     if (f == TODO)
         printaction(todo, ntodo);
     else if (f == PORT)
@@ -59,11 +155,13 @@ static void allocatewealth (const struct macrostrategy *strat,
     double persharealloc;
     size_t i;
     Record cashrec ;
-    Security cash = {.symbol = "USD", .target = 9.99, .price = 1};
+    Security cash = {.symbol = "USD", .target = 9.99, 
+        .price = 1, .type = CASH};
     if (strat->allocation == EQ_WEALTH){
         persharealloc = portvalue / (float) newport->portsize;
         for (i = 0; i < newport->portsize; i++)
-            newport->records[i].shares = floor(persharealloc / newport->records[i].asset.price);
+            newport->records[i].shares = 
+                floor(persharealloc / newport->records[i].asset.price);
     }
     cashrec.shares = floor(portvalue - valueportfolio(newport));
     cashrec.asset = cash;
@@ -71,44 +169,57 @@ static void allocatewealth (const struct macrostrategy *strat,
     ++(newport->portsize);
 }
 
-static size_t getaction (const Portfolio *cuport, Portfolio *newport, 
-        const struct macrostrategy *strat, struct action *todo){
+static size_t getaction (const Portfolio *cuport, 
+        Portfolio *newport, 
+        const struct macrostrategy *strat, 
+        struct action *todo,
+        const char *curdate, 
+        const sqlite3 *db){
    size_t i, j, k;
    double portval;
    bool exists;
 
+   liquidateport(cuport, curdate, db);
    portval = valueportfolio(cuport);
    allocatewealth (strat, newport, portval);
    for (i = 0; i < cuport->portsize; i++){
-       strcpy(todo[i].symbol, cuport->records[i].asset.symbol); 
+       strcpy(todo[i].symbol, 
+               cuport->records[i].asset.symbol); 
        todo[i].action = SELL;
        todo[i].shares = cuport->records[i].shares;
    }
    for (k = 0, i = 0; i < newport->portsize; i++){
        exists = false;
        for (j = 0; j < cuport->portsize; j++)
-           if (strcmp (newport->records[i].asset.symbol, cuport->records[j].asset.symbol) == 0){
+           if (strcmp (newport->records[i].asset.symbol, 
+                       cuport->records[j].asset.symbol) == 0){
                exists = true;
                if (todo[j].shares > newport->records[i].shares)
                    todo[j].shares -= newport->records[i].shares;
                else {
-                   todo[j].shares = newport->records[i].shares - todo[j].shares;
+                   todo[j].shares = 
+                       newport->records[i].shares - 
+                       todo[j].shares;
                    todo[j].action = BUY;
                }
                break;
            }
        if (exists == false){
-           strcpy(todo[k + cuport->portsize].symbol, newport->records[i].asset.symbol);
+           strcpy(todo[k + cuport->portsize].symbol, 
+                   newport->records[i].asset.symbol);
            todo[k + cuport->portsize].action = BUY;
-           todo[k + cuport->portsize].shares = newport->records[i].shares;
+           todo[k + cuport->portsize].shares = 
+               newport->records[i].shares;
            k++;
        }
    }
    return (k + cuport->portsize);
 }
 
-void runstrategy (const Portfolio *cuport,  Portfolio *newport, 
-        const struct macrostrategy *strat, struct action *todo,
+void runstrategy (const Portfolio * const cuport,  
+        Portfolio *newport, 
+        const struct macrostrategy *strat, 
+        struct action *todo,
         const char *lastdate){
     sqlite3 * db = 0;
     sqlite3_stmt *stmt;
@@ -119,7 +230,8 @@ void runstrategy (const Portfolio *cuport,  Portfolio *newport,
          order[32];
     time_t lasttime, begintime;
     struct tm lasttm = {0}, begintm ={0};
-    const char *headsql = "select symbol, price, avg(returns) as avgret \
+    const char *headsql = 
+        "select symbol, price, avg(returns) as avgret \
         from minireturn \
         where date <= ?100 and date >= ?101\
         group by symbol\
@@ -127,7 +239,8 @@ void runstrategy (const Portfolio *cuport,  Portfolio *newport,
     const char *tailsql = " limit ?103;";
    
     //Get most recent data date
-    rc = sqlite3_open_v2(DBNAME, &db, SQLITE_OPEN_READONLY, NULL);
+    rc = sqlite3_open_v2(DBNAME, &db, 
+            SQLITE_OPEN_READONLY, NULL);
 
     //Obtain the start date from the strategy
     //and the last data dates
@@ -160,17 +273,19 @@ void runstrategy (const Portfolio *cuport,  Portfolio *newport,
     rc = sqlite3_step(stmt);
     i = 0;
     while (rc == SQLITE_ROW){
-        strcpy(newport->records[i].asset.symbol, (char *)sqlite3_column_text(stmt, 0));
-        newport->records[i].asset.price  = sqlite3_column_double(stmt, 1);
-        newport->records[i].asset.target = sqlite3_column_double(stmt, 2);
+        strcpy(newport->records[i].asset.symbol, 
+                (char *)sqlite3_column_text(stmt, 0));
+        newport->records[i].asset.price  
+            = sqlite3_column_double(stmt, 1);
+        newport->records[i].asset.target 
+            = sqlite3_column_double(stmt, 2);
         rc = sqlite3_step(stmt);
         i++;
     }
     newport->portsize = strat->portsize;
-    ntodo = getaction (cuport,newport, strat, todo);
+    ntodo = getaction (cuport,newport, 
+            strat, todo, lastdate, db);
     printout(newport, todo, ntodo, NONE); 
-    //printaction(todo, ntodo);
-    //printportfolio(newport);
     sqlite3_finalize(stmt);
     sqlite3_close(db);
 }

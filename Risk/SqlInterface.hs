@@ -4,7 +4,7 @@ import Database.HDBC
 import Database.HDBC.Sqlite3
 
 databaseName :: String
-databaseName = "stocks.db"
+databaseName = "/home/wale/Documents/backtest/Risk/stocks.db"
 
 dailyTable :: String
 dailyTable = "miniprice"
