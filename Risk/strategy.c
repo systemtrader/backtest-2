@@ -40,6 +40,20 @@ void printportfolio(const Portfolio *port){
     puts("");
 }
 
+static void printout (const Portfolio *port, const Action *todo, size_t ntodo,  PrintFlag f){
+    if (f == TODO)
+        printaction(todo, ntodo);
+    else if (f == PORT)
+        printportfolio(port);
+    else if (f == BOTH){
+        printaction(todo, ntodo);
+        printportfolio(port);
+    }else if (f == NONE)
+        ;
+    else
+        perror ("printout: invalid print flag");
+}
+
 static void allocatewealth (const struct macrostrategy *strat, 
         Portfolio *newport, const double portvalue){
     double persharealloc;
@@ -154,8 +168,9 @@ void runstrategy (const Portfolio *cuport,  Portfolio *newport,
     }
     newport->portsize = strat->portsize;
     ntodo = getaction (cuport,newport, strat, todo);
-    printaction(todo, ntodo);
-    printportfolio(newport);
+    printout(newport, todo, ntodo, NONE); 
+    //printaction(todo, ntodo);
+    //printportfolio(newport);
     sqlite3_finalize(stmt);
     sqlite3_close(db);
 }

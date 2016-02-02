@@ -29,6 +29,13 @@ typedef enum allocationtype{
     EQ_SHARES
 } Allocation;
 
+typedef enum printflag {
+    NONE,
+    TODO,
+    PORT,
+    BOTH
+} PrintFlag;
+
 typedef struct macrostrategy {
     char name[STRATNAMEMAX];
     int period;
@@ -45,5 +52,4 @@ void runstrategy ( const struct portfolio *, Portfolio *,
 
 void printportfolio(const Portfolio *);
 void printaction(const Action *, size_t );
-
 #endif  /*STRATEGY_H*/

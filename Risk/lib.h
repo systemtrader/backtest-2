@@ -48,7 +48,7 @@ static inline void datetotm (const char *date, struct tm *t){
     t->tm_mon = mon - 1;
     t->tm_mday = day;
 }
-static inline void inc_day(char *source, unsigned int days){
+static inline void inc_day( char *source, unsigned int days){
     struct tm t = {0};
     datetotm(source, &t);
     t.tm_mday += days;

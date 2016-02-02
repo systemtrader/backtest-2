@@ -1,4 +1,0 @@
-strategy: strategy.c  
-	gcc -O3 strategy.c portfolio.c -o strategy -lsqlite3 -lm -Wall
-clean:
-	rm *.o
