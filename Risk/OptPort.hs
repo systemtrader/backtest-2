@@ -35,24 +35,24 @@ portValue (Portfolio xs) =
 wealthSeries :: Double -> [[Security]] ->  [[Security]] -> [Portfolio]
 wealthSeries _ _ [] = []
 wealthSeries value (x:xs) (y:ys) 
-    | value <= 0.0 = []  
+--    | value <= 0.0 = []  
     | otherwise = yport : wealthSeries (portValue yport) xs ys where
         xport = toPort value x
         ds = (\(Portfolio s) -> s) xport
         yport = Portfolio ((zipWith (\a b -> (a,b)) y [s| (_, s) <- init ds]) ++ [last ds])
 
 
-buildCallBackSql :: Int -> String
+buildCallBackSql :: Integer -> String
 buildCallBackSql nassets = "select symbol, date, price from miniprice \
         \ where symbol in (" ++ marks ++ ") and date = ?;" where
-    marks = intersperse ',' $ take nassets (repeat '?') 
+    marks = intersperse ',' $ take (fromInteger nassets) (repeat '?') 
 
 getEndPrice :: Connection -> [Security] -> Day  -> IO [[SqlValue]] 
-getEndPrice conn secs date = quickQuery' conn (buildCallBackSql (length secs)) pars where
+getEndPrice conn secs date = quickQuery' conn (buildCallBackSql (fromIntegral (length secs))) pars where
     pars = [toSql (symbol sec) | sec <- secs] ++ [toSql dt]
     dt = filter (/= '-') (showGregorian date)  
 
-optPort :: Connection -> Int -> Pair Day Day  -> IO [[SqlValue]] 
+optPort :: Connection -> Integer -> Pair Day Day  -> IO [[SqlValue]] 
 optPort conn n (Pair (sd, ed)) = quickQuery' conn sqlStr [toSql sds, toSql eds, toSql n] where
     sds = filter (/= '-') (showGregorian sd)  
     eds = filter (/= '-') (showGregorian ed)  
