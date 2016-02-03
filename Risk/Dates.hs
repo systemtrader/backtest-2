@@ -16,16 +16,14 @@ previousDate (Day n) dt = addDays (-n) dt
 previousDate (Month n) dt = addGregorianMonthsClip (-n) dt
 previousDate (Year n) dt = addGregorianYearsClip (-n) dt
 
-turnOverDates :: TimeUnit -> [Day] -> [Day]
-turnOverDates n [] = []
-turnOverDates n (x:xs) = x : turnOverDates n ys where
+getBalancingDates :: TimeUnit -> [Day] -> [Day]
+getBalancingDates n [] = []
+getBalancingDates n (x:xs) = x : getBalancingDates n ys where
     ys = filter (<= previousDate n x) xs
-
     
 lastDate :: IO Day
-lastDate = connectSqlite3 databaseName 
+lastDate = connectSqlite3 dbName
+    --dbName is defined in SqlInterface
     >>= \connection -> quickQuery' connection lastDateSqlStr [] 
     >>= \sqlDate -> disconnect connection 
     >>  (return . head . (map sqlToDates))  sqlDate 
-    
-

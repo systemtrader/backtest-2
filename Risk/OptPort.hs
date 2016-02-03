@@ -47,12 +47,12 @@ buildCallBackSql nassets = "select symbol, date, price from miniprice \
         \ where symbol in (" ++ marks ++ ") and date = ?;" where
     marks = intersperse ',' $ take nassets (repeat '?') 
 
-endPrice :: Connection -> [Security] -> Day  -> IO [[SqlValue]] 
-endPrice conn secs date = quickQuery' conn (buildCallBackSql (length secs)) pars where
+getEndPrice :: Connection -> [Security] -> Day  -> IO [[SqlValue]] 
+getEndPrice conn secs date = quickQuery' conn (buildCallBackSql (length secs)) pars where
     pars = [toSql (symbol sec) | sec <- secs] ++ [toSql dt]
     dt = filter (/= '-') (showGregorian date)  
 
-optPort :: Connection -> Integer -> Pair Day Day  -> IO [[SqlValue]] 
+optPort :: Connection -> Int -> Pair Day Day  -> IO [[SqlValue]] 
 optPort conn n (Pair (sd, ed)) = quickQuery' conn sqlStr [toSql sds, toSql eds, toSql n] where
     sds = filter (/= '-') (showGregorian sd)  
     eds = filter (/= '-') (showGregorian ed)  

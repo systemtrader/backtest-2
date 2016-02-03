@@ -1,14 +1,91 @@
 #include "strategy.h"
+static void allocatewealth (const   struct macrostrategy *strat, 
+        Portfolio *new_port, const double portvalue);
+static void optimal_ports (const struct macrostrategy *strat, const char *trading_date,
+        Portfolio *indicative_portfolio);
 
-/*static size_t getaction(const Portfolio *, struct portfolio *, 
-        const struct macrostrategy *,
-        struct action *);
-static void allocatewealth (const struct macrostrategy *, 
-        Portfolio *,
-        const double);*/
+void build_initial_portfolio (const struct macrostrategy *strat, Portfolio *initial_portfolio,
+    const char *first_date, double initial_wealth){
+    optimal_ports(strat,first_date,initial_portfolio);
+    allocatewealth(strat, initial_portfolio, initial_wealth);
+}
 
-static double liquidateport (Portfolio * const port, 
-        const char *date, sqlite3 *db){
+static void optimal_ports (const struct macrostrategy *strat, const char *trading_date,
+        Portfolio *indicative_portfolio){
+    sqlite3 *db;
+    sqlite3_stmt *stmt;
+    char order[sizeof("desc")] = {0}, previous_trading_date[DAYMAX] = {0};
+    char sql[SQLMAX] = {0};
+    const char *headsql = 
+        "select symbol, price, avg(returns) as avgret \
+        from minireturn \
+        where date <= ?100 and date >= ?101\
+        group by symbol\
+        order by avgret "; 
+    const char *tailsql = " limit ?103;";
+    unsigned int rc, i;
+
+     //Prepare and bind sql statement 
+    if(strat->direction == HIGHEST)
+        strcpy(order,"desc");
+    else
+        strcpy(order,"asc");
+    strcpy(sql, headsql);
+    strcat(sql, order);
+    strcat(sql, tailsql);
+
+    //Open database and prepare sql stement
+    rc = sqlite3_open_v2(DBNAME, &db, SQLITE_OPEN_READONLY, NULL);
+    if (rc != SQLITE_OK){
+        pexit("optimal_ports: open error");
+    }
+    rc = sqlite3_prepare_v2(db, sql,
+            strlen(sql) + 1, &stmt, NULL);
+    if (rc != SQLITE_OK){
+        sqlite3_close(db);
+        pexit("optimal_ports: prepare error");
+    }
+
+    //Define previous trading date. A downward increment...
+    strcpy(previous_trading_date, trading_date);
+    inc_day(previous_trading_date, - strat->period);
+
+    //Bind the appropriate dates and porfolio sizes
+    rc = sqlite3_bind_text(stmt, 100, trading_date, DAYMAX,
+            SQLITE_TRANSIENT);
+    rc += sqlite3_bind_text(stmt, 101, previous_trading_date, DAYMAX,
+            SQLITE_TRANSIENT);
+    rc += sqlite3_bind_int(stmt, 103, strat->portsize);
+
+    if (rc != SQLITE_OK){
+        sqlite3_finalize(stmt);
+        sqlite3_close(db);
+        pexit("optimal_ports: bind error");
+    }
+
+    //Prepare the indicative portfolio
+    rc = sqlite3_step(stmt);
+    i = 0;
+    while (rc == SQLITE_ROW){
+        strcpy(indicative_portfolio->records[i].asset.symbol, 
+                (char *)sqlite3_column_text(stmt, 0));
+        indicative_portfolio->records[i].asset.price  
+            = sqlite3_column_double(stmt, 1);
+        indicative_portfolio->records[i].asset.target 
+            = sqlite3_column_double(stmt, 2);
+        rc = sqlite3_step(stmt);
+        i++;
+    }
+    indicative_portfolio->portsize = strat->portsize;
+    //Clean up.
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
+}
+
+static double port_maket_value (Portfolio *  port, 
+        const char *trading_date){
+    //The database needs to be queried for the current prices of the old portfolio
+    sqlite3 *db;
     sqlite3_stmt *stmt = NULL;
     size_t msize, ssize, i, j = 0 , k,  cashcount;
     unsigned int rc = 0, found;
@@ -18,26 +95,30 @@ static double liquidateport (Portfolio * const port,
         "select symbol, price from"
         " minireturn where"
         " date = ? and symbol in (";
+    //If the porfolio contains just cash then just return it
     if (port->portsize == 1 &&
             port->records[0].asset.type == CASH)
-        return valueportfolio(port);
+        return port->records[0].shares;
 
+    //Determine the number of cash (could be improved)
     for (cashcount = i = 0; i < port->portsize; i++)
         if (port->records[i].asset.type == CASH)
             cashcount++;
 
+    //Allocate memory for spl parameters
     msize = ssize = port->portsize - cashcount;
     msize = 2 * msize;
 
     if ((syms = malloc(ssize * sizeof(char[SYMBOLMAX]))) == NULL){
-        perror("liquidateport: calloc failed");
+        perror("port_maket_value: calloc failed");
         exit(EXIT_FAILURE);
     }
     if ((marks = calloc(msize, msize * sizeof(char))) == NULL){
-        perror("liquidateport: calloc failed");
+        perror("port_maket_value: calloc failed");
         exit(EXIT_FAILURE);
     }
 
+    //Build the parametric side of the sql statement
     for (k  = i = j = 0; j < port->portsize ; i++, j++, k++){
         while (port->records[j].asset.type == CASH)
             j++;
@@ -52,39 +133,40 @@ static double liquidateport (Portfolio * const port,
     strcpy(sqlstr, sql);
     strcat(sqlstr, marks);
     
-//    rc = sqlite3_open_v2(DBNAME, &db, 
-  //          SQLITE_OPEN_READONLY, NULL);
+    //Open database and prepare query
+    rc = sqlite3_open_v2(DBNAME, &db, SQLITE_OPEN_READONLY, NULL);
+    if (rc != SQLITE_OK)
+        pexit("port_maket_value: open error");
 
-    /*if (rc != SQLITE_OK){
-        printf("open db: rc = %d\n", rc);
-        sqlite3_close(db);
-        //printf("%s\n", sqlite3_sql(stmt));
-        exit(EXIT_FAILURE);
-    }*/
-  
     rc = sqlite3_prepare_v2(db, sqlstr,
-            strlen(sqlstr) + 1, &stmt, NULL);
+            sizeof(sqlstr)  , &stmt, NULL);
     if (rc != SQLITE_OK){
+        sqlite3_close(db);
         printf("prepare: rc = %d\n", rc);
         exit(EXIT_FAILURE);
     }
-    rc = sqlite3_bind_text(stmt,1, date, DAYMAX,
-      SQLITE_TRANSIENT);
+    rc = sqlite3_bind_text(stmt,1,trading_date , -1,
+      SQLITE_STATIC);
 
     if (rc != SQLITE_OK){
+        sqlite3_finalize(stmt);
+        sqlite3_close(db);
         printf("bind: rc = %d\n", rc);
         exit(EXIT_FAILURE);
     }
-
+    
+    //Bind symbols to the sql statement
     for (i = 0; i < port->portsize - cashcount; i++){
-        rc = sqlite3_bind_text(stmt,2 + i, syms[i] , DAYMAX,
-            SQLITE_TRANSIENT);
+        rc = sqlite3_bind_text(stmt,2 + i, syms[i] , -1,
+            SQLITE_STATIC);
         if (rc != SQLITE_OK){
             printf("inner bind: rc = %d \t item: %d\n ", rc, i);
             exit(EXIT_FAILURE);
         }
     }
-
+    
+    //Obtain the new prices for the old portfolio making sures
+    //the prices match with the symbols
     rc = sqlite3_step(stmt);
     i = 0;
     while (rc == SQLITE_ROW){
@@ -110,7 +192,6 @@ static double liquidateport (Portfolio * const port,
         i++;
     }
  
-    //printf("%s\n", sqlite3_sql(stmt));
     sqlite3_finalize(stmt);
     free(marks);
     free(syms);
@@ -132,15 +213,15 @@ static void printaction(const Action *todo, size_t ntodo, const char *date){
                 todo[i].symbol, PRTTRANS(todo[i].action),
                 todo[i].shares,
                 todo[i].price,
-                todo[i].totalprice);
+                todo[i].cost);
     }
 
     puts("--------------------------------------------------------------------------");
     for (i = 0, totbought = totsold = 0.0; i < ntodo; i++){
         if (todo[i].action == BUY)
-            totbought += todo[i].totalprice;
+            totbought += todo[i].cost;
         else
-            totsold += todo[i].totalprice;
+            totsold += todo[i].cost;
     }
     printf("Total bought: %f\nTotal sold: %f\nNet Gain: %f\n", 
             totbought, totsold, totsold - totbought);
@@ -166,6 +247,8 @@ void printportfolio(const Portfolio *port){
                 100*port->records[i].asset.target,
                 port->records[i].shares);
     puts("");
+    printf("Current porfolio value: %.2f\n\n",
+            valueportfolio(port));
 }
 
 static void printout (const Portfolio *port, 
@@ -185,150 +268,108 @@ static void printout (const Portfolio *port,
 }
 
 static void allocatewealth (const struct macrostrategy *strat, 
-        Portfolio *newport, const double portvalue){
+        Portfolio *new_port, const double portvalue){
     double persharealloc;
     size_t i;
     Record cashrec ;
-    Security cash = {.symbol = "USD", .target = 9.99, 
-        .price = 1, .type = CASH};
+    Security cash = {.symbol = "USD", .target = 9.99, .type = CASH};
     if (strat->allocation == EQ_WEALTH){
-        persharealloc = portvalue / (float) newport->portsize;
-        for (i = 0; i < newport->portsize; i++)
-            newport->records[i].shares = 
-                floor(persharealloc / newport->records[i].asset.price);
+        persharealloc = portvalue / (float) new_port->portsize;
+        for (i = 0; i < new_port->portsize; i++)
+            new_port->records[i].shares = 
+                floor(persharealloc / new_port->records[i].asset.price);
     }
-    cashrec.shares = floor(portvalue - valueportfolio(newport));
+    cash.price = portvalue - valueportfolio(new_port);
     cashrec.asset = cash;
-    newport->records[newport->portsize] = cashrec;
-    ++(newport->portsize);
+    cashrec.shares = 1;
+    new_port->records[new_port->portsize] = cashrec;
+    ++(new_port->portsize);
 }
 
-static size_t getaction (Portfolio * const cuport, 
-        Portfolio *newport, 
+static size_t getaction (Portfolio * const old_portfolio, 
+        Portfolio *new_port, 
         const struct macrostrategy *strat, 
         struct action *todo,
-        const char *curdate, 
-        sqlite3 *db){
+        const char *trading_date){
+    //The output show be a list of trades to make in order to 
+    //construct the indicative portfolio
+    //1. Update the value of the old porfolio by referencing 
+    //  current maket price
+    //2. Sell the old portfolio, buy the new portfolio
+
    size_t i, j, k, ntodo;
    double portval;
    bool exists;
 
-   portval = liquidateport(cuport, curdate, db);
-   //printf("%f\n", portval);
-   allocatewealth (strat, newport, portval);
-   for (i = 0; i < cuport->portsize; i++){
+   //Current market value of old portfoio is obtained
+   portval = port_maket_value(old_portfolio, trading_date);
+
+   //Figure out an allocation scheme for the new portfolio 
+   //based on the liguidation value of the old portfolio
+   allocatewealth (strat, new_port, portval);
+
+   //Determine the list of trades to execute
+   for (i = 0; i < old_portfolio->portsize; i++){
        strcpy(todo[i].symbol, 
-               cuport->records[i].asset.symbol); 
+               old_portfolio->records[i].asset.symbol); 
        todo[i].action = SELL;
-       todo[i].shares = cuport->records[i].shares;
-       todo[i].price = cuport->records[i].asset.price;
+       todo[i].shares = old_portfolio->records[i].shares;
+       todo[i].price = old_portfolio->records[i].asset.price;
    }
-   for (k = 0, i = 0; i < newport->portsize; i++){
+   for (k = 0, i = 0; i < new_port->portsize; i++){
        exists = false;
-       for (j = 0; j < cuport->portsize; j++)
-           if (strcmp (newport->records[i].asset.symbol, 
-                       cuport->records[j].asset.symbol) == 0){
+       for (j = 0; j < old_portfolio->portsize; j++)
+           if (strcmp (new_port->records[i].asset.symbol, 
+                       old_portfolio->records[j].asset.symbol) == 0){
                exists = true;
-               if (todo[j].shares > newport->records[i].shares)
-                   todo[j].shares -= newport->records[i].shares;
+               if (todo[j].shares > new_port->records[i].shares)
+                   todo[j].shares -= new_port->records[i].shares;
                else {
                    todo[j].shares = 
-                       newport->records[i].shares - 
+                       new_port->records[i].shares - 
                        todo[j].shares;
                    todo[j].action = BUY;
-                   todo[j].price = newport->records[i].asset.price;
+                   todo[j].price = new_port->records[i].asset.price;
                }
                break;
            }
        if (exists == false){
-           strcpy(todo[k + cuport->portsize].symbol, 
-                   newport->records[i].asset.symbol);
-           todo[k + cuport->portsize].action = BUY;
-           todo[k + cuport->portsize].shares = 
-               newport->records[i].shares;
-           todo[k + cuport->portsize].price = 
-               newport->records[i].asset.price;
+           strcpy(todo[k + old_portfolio->portsize].symbol, 
+                   new_port->records[i].asset.symbol);
+           todo[k + old_portfolio->portsize].action = BUY;
+           todo[k + old_portfolio->portsize].shares = 
+               new_port->records[i].shares;
+           todo[k + old_portfolio->portsize].price = 
+               new_port->records[i].asset.price;
            k++;
        }
    }
-   ntodo =  (k + cuport->portsize);
+   ntodo =  (k + old_portfolio->portsize);
    for (i = 0; i < ntodo; i ++)
-       todo[i].totalprice = todo[i].shares *todo[i].price;
+       todo[i].cost = todo[i].shares *todo[i].price;
    return ntodo;
 }
 
-void runstrategy (Portfolio * const cuport,  
-        Portfolio *newport, 
-        const struct macrostrategy *strat, 
+void runstrategy (Portfolio * const old_portfolio,  
+        Portfolio *new_portfolio, 
+        const struct macrostrategy *strategy, 
         struct action *todo,
-        const char *lastdate){
-    sqlite3 * db = 0;
-    sqlite3_stmt *stmt;
-    int rc; 
-    size_t i, ntodo;
-    char sql[SQLMAX];
-    char  begindate[DAYMAX],
-         order[32];
-    time_t lasttime, begintime;
-    struct tm lasttm = {0}, begintm ={0};
-    const char *headsql = 
-        "select symbol, price, avg(returns) as avgret \
-        from minireturn \
-        where date <= ?100 and date >= ?101\
-        group by symbol\
-        order by avgret "; 
-    const char *tailsql = " limit ?103;";
-   
-    //Get most recent data date
-    rc = sqlite3_open_v2(DBNAME, &db, 
-            SQLITE_OPEN_READONLY, NULL);
+        const char *trading_date){
+    //1. Determine optimal new symbol based on the past and by them
+    //2. Determine what trades to make 
 
-    //Obtain the start date from the strategy
-    //and the last data dates
-    strptime(lastdate, DAYFORMAT, &lasttm);
-    lasttime = mktime(&lasttm);
-    begintime = lasttime - DAYTOSEC(strat->period);
-    begintm = *(localtime( &begintime));
-    strftime(begindate, DAYMAX, 
-            DAYFORMAT, &begintm);
+    unsigned int ntodo = 0;
 
-    //Prepare and bind sql statement 
-    if(strat->direction == HIGHEST)
-        strcpy(order,"desc");
-    else
-        strcpy(order,"asc");
-    strcpy(sql, headsql);
-    strcat(sql, order);
-    strcat(sql, tailsql);
+    //Get optimal portfolios. This step is indicative only. Shares have not
+    //been bought or allocated yet
+    optimal_ports (strategy, trading_date, new_portfolio);
 
-    rc = sqlite3_prepare_v2(db, sql,
-            strlen(sql)+1, &stmt, NULL);
+    //getaction figures out the trades to make
+    ntodo = getaction (old_portfolio, new_portfolio, 
+            strategy, todo, trading_date);
 
-    sqlite3_bind_text(stmt, 100, lastdate, DAYMAX,
-            SQLITE_TRANSIENT);
-    sqlite3_bind_text(stmt, 101, begindate, DAYMAX,
-            SQLITE_TRANSIENT);
-    sqlite3_bind_int(stmt, 103, strat->portsize);
-
-    //Prepare the result struct
-    rc = sqlite3_step(stmt);
-    i = 0;
-    while (rc == SQLITE_ROW){
-        strcpy(newport->records[i].asset.symbol, 
-                (char *)sqlite3_column_text(stmt, 0));
-        newport->records[i].asset.price  
-            = sqlite3_column_double(stmt, 1);
-        newport->records[i].asset.target 
-            = sqlite3_column_double(stmt, 2);
-        rc = sqlite3_step(stmt);
-        i++;
-    }
-    newport->portsize = strat->portsize;
-    ntodo = getaction (cuport,newport, 
-            strat, todo, lastdate, db);
-    printout(newport, todo, ntodo, lastdate, TODO); 
-    sqlite3_finalize(stmt);
-    sqlite3_close(db);
+    //Display the new portfolio and trades to carry out
+    printout(new_portfolio, todo, ntodo, trading_date, NONE); 
 }
 /*
 int main (int argc, char *argv[]) {

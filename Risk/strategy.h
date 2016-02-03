@@ -51,5 +51,7 @@ void runstrategy ( struct portfolio * const, Portfolio *,
         const char *);
 
 void printportfolio(const Portfolio *);
+void build_initial_portfolio (const struct macrostrategy *strat, Portfolio *initial_portfolio,
+    const char *first_date, double initial_wealth);
 //void printaction(const Action *, size_t );
 #endif  /*STRATEGY_H*/

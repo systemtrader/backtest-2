@@ -3,11 +3,11 @@ import Data.Time
 import Database.HDBC 
 import Database.HDBC.Sqlite3
 
-databaseName :: String
-databaseName = "/home/wale/Documents/backtest/Risk/stocks.db"
+dbName :: String
+dbName = "/home/wale/Documents/backtest/Risk/stocks.db"
 
 dailyTable :: String
-dailyTable = "miniprice"
+dailyTable = "minireturn"
 
 type Formula = String
 type Symbol = String
@@ -16,10 +16,12 @@ returnFormula :: Formula
 returnFormula = "((f.price/b.price) - 1)"
 
 sqlStr::String
-sqlStr = "select f.symbol, f.date,f.price, ((f.price/b.price) - 1) as target  \
-    \ from " ++ dailyTable ++ " f, (select symbol, date, price from prices where date = ?)  b \
-    \ where b.symbol = f.symbol and f.date = ? order by target desc limit ?;"
-
+sqlStr = "select symbol, date, price, avg(returns) as avgret\
+        \ from minireturn\
+        \ where date >= ? and date <= ?\
+        \ group by symbol\
+        \ order by avgret desc limit ?;"
+ 
 getDateSqlStr :: String
 getDateSqlStr = "select distinct date from miniprice where date != 'DATE';"
 
@@ -29,9 +31,6 @@ lastDateSqlStr = "select date from " ++ dailyTable ++ " order by date desc limit
 activeSymbolSqlStr :: String
 activeSymbolSqlStr = "select symbol from "++dailyTable++" where date = ? \
     \intersect select symbol from "++dailyTable++" where date = ?;" 
-
-pricesBtwSqlStr :: String
-pricesBtwSqlStr = "select price from "++dailyTable++" where symbol = ? and date >= ? and date <= ?;"
 
 sqlToDates :: [SqlValue] -> Day
 sqlToDates [SqlByteString x] =  
