@@ -13,7 +13,7 @@ typedef struct action {
     Transaction action;
     unsigned int shares;
     double price;
-    double totalprice;
+    double cost;
     char date[DAYMAX];
 } Action;
 

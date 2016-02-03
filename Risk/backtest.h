@@ -3,6 +3,5 @@
 
 #include "strategy.h"
 
-void backtest (const struct macrostrategy *, const Portfolio *,
-        const char *, const char *);
+void backtest (const struct macrostrategy *, const Portfolio *);
 #endif  /*BACKTEST_H*/

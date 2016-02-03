@@ -7,6 +7,8 @@
 #define _GNU_SOURCE
 #endif  /*_GNU_XOPEN_*/
 #include <time.h>
+#include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include <assert.h>
 #define DAYFORMAT "%Y%m%d"
@@ -59,6 +61,10 @@ static inline void inc_day( char *source, unsigned int days){
             t.tm_mday);
 }
 
+static inline void pexit (const char *msg){
+    puts(msg);
+    exit(EXIT_FAILURE);
+}
 
 
 #endif  /*LIB_H*/

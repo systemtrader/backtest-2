@@ -1,3 +1,4 @@
+module Strategy where
 import Dates
 import Lib
 import SqlInterface 
@@ -26,7 +27,7 @@ data OrderDirection = Asc
 data Strategy = MicroStrategy { name :: String}
     | MacroStrategy {
         name :: String,
-        window :: TimeUnit,
+        investmentHorizon :: TimeUnit,
         initialWealth :: Double,
         portfolioSize :: Int,
         target :: Target,
@@ -35,46 +36,13 @@ data Strategy = MicroStrategy { name :: String}
 
 baseMacroStrategy = MacroStrategy {
     name = "",
-    window = Day 7,
+    investmentHorizon = Day 1,
     initialWealth = 10000,
     portfolioSize = 5,
     target = MeanReturn,
-    direction = Desc}
+    direction = Asc}
 
-toFormula :: Target -> Formula
-toFormula target 
-    | target == MeanReturn = returnFormula
-    | otherwise = returnFormula 
-
-activeSymbolsBtw :: Day -> Day -> IO [String]
-activeSymbolsBtw fDate sDate = connectSqlite3 databaseName 
-    >>= \connection -> 
-        let dts = map (toSql . filter (/= '-') . showGregorian) [fDate, sDate] 
-        in  quickQuery' connection activeSymbolSqlStr dts 
-    >>= \sqlSymbs -> disconnect connection 
-    >>  (return . (map (filter (/= '\"') . sqlToSymbol)))  sqlSymbs 
  
-pricesBtw :: Symbol -> Day -> Day -> IO [Double]
-pricesBtw symbol startDate endDate = connectSqlite3 databaseName 
-    >>= \connection -> 
-        let dts = map (toSql . filter (/= '-') . showGregorian) [startDate, endDate] 
-        in  quickQuery' connection pricesBtwSqlStr ([toSql symbol] ++ dts)
-    >>= \sqlPrices -> disconnect connection 
-    >>  (return . (map sqlToPrice))  sqlPrices
-
---runStrategy :: Strategy -> IO [Pair Security Action]
-runStrategy strategy = lastDate
-    >>= \endDate ->
-        let startDate = previousDate (window strategy) endDate
-        in activeSymbolsBtw startDate endDate
-    >>= \symbols ->
-        let pricesBtw' fd sd sy = pricesBtw sy fd sd
-        in  mapM (pricesBtw' startDate endDate) symbols
-    >>= \prices -> 
-        let targets = map ((targetToFunc . target) strategy) prices
-            sortLis = sortBy (\(s,t) (s',t') -> compare t t') (zip symbols targets)
-            porSize = portfolioSize strategy
-        in  return $ ((directionToTake . direction) strategy) porSize sortLis
             
         
 
