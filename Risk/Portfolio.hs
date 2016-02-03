@@ -2,7 +2,7 @@ module Portfolio   where
 import Data.Time
 import Lib
 
-type Shares = Int
+type Shares = Integer
 type Share = Integer
 
 data Security = Equity {

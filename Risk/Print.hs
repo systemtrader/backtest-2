@@ -16,7 +16,7 @@ alignDecimal ns =
         fc = \(x,y) -> x ++ y
     in (fc . fi . fs) ns
 
-round' :: Int ->  Double -> Double
+round' :: Integer ->  Double -> Double
 round' n x = ((fromIntegral . floor) (x * t)) / t where
     t = 10^n
 

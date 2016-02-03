@@ -5,7 +5,7 @@ datmonth = "12"
 datday = "00"
 url1 =  "http://real-chart.finance.yahoo.com/table.csv?s="++symbol++"&a="++datday++"&b="++datmonth++"&c="++datyear++"&d="++datday++"&e="++datmonth++"&f="++datyear++"&g=d&ignore=.csv"
 type Value = Double
-type Shares = Int
+type Shares = Integer
 type Price = Double
 url2 = "http://query.yahooapis.com/v1/public/yql?q=select%20*%20from%20yahoo.finance.quotes%20where%20symbol%20in%20%28%22GLD,SLV%22%29&env=store://datatables.org/alltableswithkeys&format=json"
 

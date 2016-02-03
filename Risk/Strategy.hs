@@ -29,7 +29,7 @@ data Strategy = MicroStrategy { name :: String}
         name :: String,
         investmentHorizon :: TimeUnit,
         initialWealth :: Double,
-        portfolioSize :: Int,
+        portfolioSize :: Integer,
         target :: Target,
         direction :: OrderDirection}  
     deriving (Show, Eq)
