@@ -6,8 +6,8 @@ import Data.Time
 import Portfolio
 import Text.Printf
 
-alignDecimal :: String -> String
-alignDecimal ns = 
+alignExp :: String -> String
+alignExp ns = 
     let 
         fs = break (=='e')
         fi = \x -> if (length (snd x)) == 3 
@@ -27,7 +27,7 @@ printResult startWealth linkedDates portfolios =
         ul  = text "-------"
         ull  = text "----------"
         std = showGregorian $ (\(Pair x) -> fst x) (linkedDates!!0)
-        tlp = text . alignDecimal . (\x -> x::String) . printf "%.2e"
+        tlp = text . alignExp . (\x -> x::String) . printf "%.2e"
         g   = map (text . showGregorian) . uninterLink 2 
         f   = map (tlp . portValue) 
         dts = [dh, ull] ++ [text std] ++ (g linkedDates)
@@ -40,4 +40,17 @@ printTable box =
     putStrLn ""
     >> printBox box
     >> putStrLn ""
+
+printLedger :: Ledger -> IO()
+printLedger ledger = 
+    let 
+        df   = text . alignExp . (\x -> x::String) . printf "%.2e" 
+        get x  = map df (x ledger) 
+        [bs, es, bp, ep, npnl] = map get [begStats, endStats, begPrices, endPrices, netPnLs]
+
+
+
+
+
+    in undefined
 

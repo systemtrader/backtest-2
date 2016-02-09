@@ -32,13 +32,20 @@ portValue :: Portfolio -> Double
 portValue (Portfolio xs) = 
     sum [secValue asset share| (asset, share) <- xs]
 
-wealthSeries :: Double -> [[Security]] ->  [[Security]] -> [Portfolio]
+wealthSeries :: Double -> [[Security]] ->  [[Security]] -> [(Portfolio, Portfolio)]
+-- Return porfolio prices are the start and end of the investment period
+-- the old portfolio is the fist in the pair.
 wealthSeries _ _ [] = []
-wealthSeries value (x:xs) (y:ys) 
---    | value <= 0.0 = []  
-    | otherwise = yport : wealthSeries (portValue yport) xs ys where
+wealthSeries value (x:xs) (y:ys) = (xport, yport) : wealthSeries (portValue yport) xs ys where
+        -- The point of recomputing the portfolio is to figure out the
+        -- shares. This makes no sense what so ever. The information about
+        -- shares really out to be passed down.
         xport = toPort value x
+        -- The (security, share) data is stored in ds
         ds = (\(Portfolio s) -> s) xport
+        -- y has its own securities. It just needs the relevant shares
+        -- information. The last item corresponds to cash. The cash
+        -- information is presumably not coded in the y's.
         yport = Portfolio ((zipWith (\a b -> (a,b)) y [s| (_, s) <- init ds]) ++ [last ds])
 
 

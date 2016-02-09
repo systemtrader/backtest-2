@@ -1,6 +1,6 @@
 module Portfolio   where
 import Data.Time
-import Lib
+
 
 type Shares = Integer
 type Share = Integer
@@ -20,7 +20,8 @@ data Security = Equity {
                     price :: Double}
                 deriving(Show,Eq)
 
-newtype Portfolio = Portfolio [(Security, Shares)] 
+newtype Portfolio = Portfolio { 
+                    records :: [(Security, Integer)]} 
     deriving (Show, Eq)
 
 data Action = Buy Share | Sell Share
