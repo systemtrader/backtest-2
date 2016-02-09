@@ -1,12 +1,5 @@
 module Strategy where
 import Dates
-import Lib
-import SqlInterface 
-import Portfolio  
-import Database.HDBC 
-import Database.HDBC.Sqlite3
-import Data.Time
-import Data.List
 
 data Target = MeanReturn 
     | SharpRatio
@@ -34,13 +27,14 @@ data Strategy = MicroStrategy { name :: String}
         direction :: OrderDirection}  
     deriving (Show, Eq)
 
+baseMacroStrategy :: Strategy
 baseMacroStrategy = MacroStrategy {
     name = "",
-    investmentHorizon = Day 1,
+    investmentHorizon = Day 2,
     initialWealth = 10000,
-    portfolioSize = 5,
+    portfolioSize = 15,
     target = MeanReturn,
-    direction = Asc}
+    direction = Desc}
 
  
             

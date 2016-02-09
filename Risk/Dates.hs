@@ -1,10 +1,9 @@
 module Dates where
 import Data.Time
-import Data.Time.Format
 import Database.HDBC 
 import Database.HDBC.Sqlite3
-import Lib
 import SqlInterface
+
 
 data TimeUnit = Day Integer 
     |Month Integer
@@ -17,7 +16,7 @@ previousDate (Month n) dt = addGregorianMonthsClip (-n) dt
 previousDate (Year n) dt = addGregorianYearsClip (-n) dt
 
 getBalancingDates :: TimeUnit -> [Day] -> [Day]
-getBalancingDates n [] = []
+getBalancingDates _ [] = []
 getBalancingDates n (x:xs) = x : getBalancingDates n ys where
     ys = filter (<= previousDate n x) xs
     
