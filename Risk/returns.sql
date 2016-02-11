@@ -1,3 +1,8 @@
+<<<<<<< HEAD
+=======
+drop table minireturn;
+
+>>>>>>> e2bb0da6eef2215aa4f58b8e8b04e0f74a2b18d4
 create table tmpminiprice as
     select * from miniprice;
 
