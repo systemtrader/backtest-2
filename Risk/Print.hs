@@ -17,10 +17,6 @@ alignExp ns =
         fc = \(x,y) -> x ++ y
     in (fc . fi . fs) ns
 
-round' :: Integer ->  Double -> Double
-round' n x = ((fromIntegral . floor) (x * t)) / t where
-    t = 10^n
-
 printResult :: Double -> [Pair Day Day] -> [Portfolio] -> Box
 printResult startWealth linkedDates portfolios =
     let dh  = text "Dates"

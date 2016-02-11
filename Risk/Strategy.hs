@@ -29,10 +29,10 @@ data Strategy = MicroStrategy { name :: String}
 
 baseMacroStrategy :: Strategy
 baseMacroStrategy = MacroStrategy {
-    name = "Base macrostrategy",
+    name = "",
     investmentHorizon = Day 3,
     initialWealth = 10000,
-    portfolioSize = 25,
+    portfolioSize = 15,
     target = MeanReturn,
     direction = Desc}
 

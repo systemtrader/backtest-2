@@ -1,0 +1,220 @@
+	Thu Feb 11 21:43 2016 Time and Allocation Profiling Report  (Final)
+
+	   Main +RTS -p -RTS
+
+	total time  =       18.10 secs   (18101 ticks @ 1000 us, 1 processor)
+	total alloc =  10,431,096 bytes  (excludes profiling overheads)
+
+COST CENTRE      MODULE       %time %alloc
+
+getEndPrice      OptPort       94.6    6.2
+optPort          OptPort        4.6   17.9
+printLedger      Print          0.0   32.3
+printLedger.pf   Print          0.0   11.1
+printLedger.bf   Print          0.0   11.7
+printLedger.df   Print          0.0    7.9
+sqlToDates       SqlInterface   0.0    3.0
+printLedger.body Print          0.0    1.4
+toSecurity.dt    OptPort        0.0    1.0
+toSecurity       OptPort        0.0    1.2
+
+
+                                                                                             individual     inherited
+COST CENTRE                             MODULE                             no.     entries  %time %alloc   %time %alloc
+
+MAIN                                    MAIN                               121           0    0.0    0.0   100.0  100.0
+ main                                   Main                               267           0    0.0    0.0     0.0    0.0
+  backTest                              Backtest                           268           0    0.0    0.0     0.0    0.0
+   backTest.\                           Backtest                           269           0    0.0    0.0     0.0    0.0
+    backTest.\.\                        Backtest                           272           0    0.0    0.0     0.0    0.0
+     backTest.\.\.\                     Backtest                           283           0    0.0    0.0     0.0    0.0
+      getEndPrice                       OptPort                            284           0    0.0    0.0     0.0    0.0
+     optPort                            OptPort                            273           0    0.0    0.0     0.0    0.0
+    backTest.\.bDates                   Backtest                           270           0    0.0    0.0     0.0    0.0
+     backTest.\.zdates                  Backtest                           271           0    0.0    0.0     0.0    0.0
+ CAF                                    Strategy                           241           0    0.0    0.0     0.0    0.0
+  baseMacroStrategy                     Strategy                           260           1    0.0    0.0     0.0    0.0
+ CAF                                    Main                               239           0    0.0    0.0   100.0   99.2
+  main                                  Main                               242           1    0.0    0.0   100.0   99.2
+   backTest                             Backtest                           243           1    0.0    0.0   100.0   99.2
+    backTest.\                          Backtest                           245           1    0.0    0.0   100.0   99.2
+     backTest.\.bDateFun                Backtest                           253           1    0.0    0.0     0.0    0.0
+      investmentHorizon                 Strategy                           259           1    0.0    0.0     0.0    0.0
+     interLink                          Lib                                252           9    0.0    0.0     0.0    0.0
+     backTest.\.\                       Backtest                           251           1    0.0    0.1    99.5   96.0
+      toSecurity                        OptPort                            281         105    0.0    0.8     0.0    0.8
+      backTest.\.\.\                    Backtest                           274           1    0.0    0.0    94.8   77.1
+       backTest.\.\.\.\                 Backtest                           285           1    0.0    0.0     0.2   70.2
+        toSecurity                      OptPort                            306         194    0.0    0.4     0.0    1.4
+         toSecurity.dt                  OptPort                            307           7    0.0    1.0     0.0    1.0
+        backTest.\.\.\.\.\              Backtest                           287           1    0.0    0.0     0.2   68.7
+         printResult                    Print                              385           1    0.0    0.0     0.0    1.0
+          printResult.std               Print                              400           1    0.0    0.0     0.0    0.0
+           printResult.std.\            Print                              401           1    0.0    0.0     0.0    0.0
+          printResult.f                 Print                              397           1    0.0    0.0     0.0    0.0
+          printResult.tlp               Print                              395           1    0.0    0.0     0.0    0.0
+          printResult.ul                Print                              394           1    0.0    0.0     0.0    0.0
+          printResult.vh                Print                              393           1    0.0    0.0     0.0    0.0
+          printResult.pvs               Print                              392           1    0.0    0.0     0.0    0.9
+           printResult.f                Print                              398           0    0.0    0.0     0.0    0.8
+            portValue                   OptPort                            415           7    0.0    0.1     0.0    0.1
+             secValue                   OptPort                            417          97    0.0    0.1     0.0    0.1
+              price                     Portfolio                          418          97    0.0    0.0     0.0    0.0
+             amount                     Portfolio                          416           7    0.0    0.0     0.0    0.0
+            printResult.tlp             Print                              399           0    0.0    0.6     0.0    0.7
+             printResult.tlp.\          Print                              414           7    0.0    0.0     0.0    0.0
+             alignExp                   Print                              409           7    0.0    0.0     0.0    0.1
+              alignExp.fs               Print                              413           7    0.0    0.0     0.0    0.0
+              alignExp.fi               Print                              411           7    0.0    0.0     0.0    0.0
+               alignExp.fi.\            Print                              412           7    0.0    0.0     0.0    0.0
+              alignExp.fc               Print                              410           7    0.0    0.0     0.0    0.0
+               alignExp.fc.\            Print                              419           7    0.0    0.0     0.0    0.0
+           printResult.tlp              Print                              396           0    0.0    0.0     0.0    0.1
+            printResult.tlp.\           Print                              407           1    0.0    0.0     0.0    0.0
+            alignExp                    Print                              402           1    0.0    0.0     0.0    0.0
+             alignExp.fs                Print                              406           1    0.0    0.0     0.0    0.0
+             alignExp.fi                Print                              404           1    0.0    0.0     0.0    0.0
+              alignExp.fi.\             Print                              405           1    0.0    0.0     0.0    0.0
+             alignExp.fc                Print                              403           1    0.0    0.0     0.0    0.0
+              alignExp.fc.\             Print                              408           1    0.0    0.0     0.0    0.0
+          printResult.g                 Print                              389           1    0.0    0.0     0.0    0.0
+          printResult.ull               Print                              388           1    0.0    0.0     0.0    0.0
+          printResult.dh                Print                              387           1    0.0    0.0     0.0    0.0
+          printResult.dts               Print                              386           1    0.0    0.0     0.0    0.1
+           printResult.g                Print                              390           0    0.0    0.1     0.0    0.1
+            uninterLink                 Lib                                391           1    0.0    0.0     0.0    0.0
+         printTable                     Print                              384           1    0.0    0.8     0.0    0.8
+         backTest.\.\.\.\.\.startWealth Backtest                           366           1    0.0    0.0     0.0    0.0
+          initialWealth                 Strategy                           367           1    0.0    0.0     0.0    0.0
+         buildLedger                    Ledger                             293           7    0.0    0.0     0.0    0.9
+          buildLedger.t                 Ledger                             372           7    0.0    0.0     0.0    0.0
+          buildLedger.n                 Ledger                             355           7    0.0    0.1     0.0    0.3
+           buildLedger.dotProd          Ledger                             356          14    0.0    0.3     0.0    0.3
+          buildLedger.esh               Ledger                             351           7    0.0    0.0     0.0    0.0
+          buildLedger.(...)             Ledger                             345           7    0.0    0.1     0.0    0.1
+           records                      Portfolio                          346          14    0.0    0.0     0.0    0.0
+          buildLedger.bsh               Ledger                             344           7    0.0    0.0     0.0    0.0
+          buildLedger.es                Ledger                             339           7    0.0    0.0     0.0    0.0
+          buildLedger.bs                Ledger                             334           7    0.0    0.0     0.0    0.0
+          buildLedger.ep                Ledger                             330           7    0.0    0.0     0.0    0.0
+          buildLedger.ps                Ledger                             321           7    0.0    0.0     0.0    0.0
+          buildLedger.fs                Ledger                             320           7    0.0    0.0     0.0    0.0
+           buildLedger.apply            Ledger                             322          28    0.0    0.0     0.0    0.0
+          buildLedger.(...)             Ledger                             319           7    0.0    0.0     0.0    0.3
+           buildLedger.fs               Ledger                             323           0    0.0    0.0     0.0    0.2
+            buildLedger.apply           Ledger                             324           0    0.0    0.2     0.0    0.2
+             statistic                  Portfolio                          363         202    0.0    0.0     0.0    0.0
+             price                      Portfolio                          361         202    0.0    0.0     0.0    0.0
+             records                    Portfolio                          325          28    0.0    0.0     0.0    0.0
+          buildLedger.bp                Ledger                             318           7    0.0    0.0     0.0    0.0
+          buildLedger.syms              Ledger                             311           7    0.0    0.0     0.0    0.1
+           buildLedger.apply            Ledger                             312           7    0.0    0.1     0.0    0.1
+            symbol                      Portfolio                          359         105    0.0    0.0     0.0    0.0
+            records                     Portfolio                          313           7    0.0    0.0     0.0    0.0
+          buildLedger.getDt             Ledger                             295           7    0.0    0.0     0.0    0.0
+          buildLedger.theDate           Ledger                             294           7    0.0    0.0     0.0    0.0
+           buildLedger.getDt            Ledger                             296           0    0.0    0.0     0.0    0.0
+            records                     Portfolio                          298           7    0.0    0.0     0.0    0.0
+            date                        Portfolio                          297           7    0.0    0.0     0.0    0.0
+         printLedger                    Print                              290           7    0.0   32.3     0.1   65.0
+          printLedger.total             Print                              370           7    0.0    0.0     0.0    0.0
+           totalPnL                     Ledger                             371           7    0.0    0.0     0.0    0.0
+          printLedger.df                Print                              357           7    0.0    0.0     0.0    0.0
+          printLedger.npl               Print                              352           7    0.0    0.0     0.0    0.0
+          printLedger.esh               Print                              349           7    0.0    0.0     0.0    0.0
+          printLedger.iff               Print                              347           7    0.0    0.0     0.0    0.0
+          printLedger.(...)             Print                              341           7    0.0    0.0     0.0    0.3
+           printLedger.geti             Print                              342          14    0.0    0.1     0.0    0.3
+            endShares                   Ledger                             350           7    0.0    0.0     0.0    0.0
+            printLedger.iff             Print                              348           0    0.0    0.2     0.0    0.2
+            begShares                   Ledger                             343           7    0.0    0.0     0.0    0.0
+          printLedger.bsh               Print                              340           7    0.0    0.0     0.0    0.0
+          printLedger.es                Print                              337           7    0.0    0.0     0.0    0.0
+          printLedger.bf                Print                              335           7    0.0    0.0     0.0    0.0
+          printLedger.bs                Print                              331           7    0.0    0.0     0.0    0.0
+          printLedger.ep                Print                              328           7    0.0    0.0     0.0    0.0
+          printLedger.pf                Print                              326           7    0.0    0.0     0.0    0.0
+          printLedger.(...)             Print                              315           7    0.0    0.0     0.1   30.8
+           printLedger.getd             Print                              353           7    0.0    0.0     0.0    7.9
+            printLedger.df              Print                              358           0    0.0    7.9     0.0    7.9
+             printLedger.df.\           Print                              369          97    0.0    0.0     0.0    0.0
+            netPnLs                     Ledger                             354           7    0.0    0.0     0.0    0.0
+           printLedger.gets             Print                              332          14    0.0    0.1     0.0   11.8
+            endStats                    Ledger                             338           7    0.0    0.0     0.0    0.0
+            printLedger.bf              Print                              336           0    0.0   11.7     0.0   11.7
+             printLedger.bf.\           Print                              362         202    0.0    0.0     0.0    0.0
+            begStats                    Ledger                             333           7    0.0    0.0     0.0    0.0
+           printLedger.getp             Print                              316          14    0.0    0.1     0.0   11.1
+            endPrices                   Ledger                             329           7    0.0    0.0     0.0    0.0
+            printLedger.pf              Print                              327           0    0.0   11.0     0.0   11.0
+             printLedger.pf.\           Print                              360         202    0.0    0.0     0.0    0.0
+            begPrices                   Ledger                             317           7    0.0    0.0     0.0    0.0
+          printLedger.bp                Print                              314           7    0.0    0.0     0.0    0.0
+          printLedger.syms              Print                              309           7    0.0    0.1     0.0    0.1
+           symbols                      Ledger                             310           7    0.0    0.0     0.0    0.0
+          printLedger.body              Print                              308           7    0.0    1.4     0.0    1.4
+          printLedger.theDate           Print                              291           7    0.0    0.1     0.0    0.1
+           date                         Ledger                             292           7    0.0    0.0     0.0    0.0
+         backTest.\.\.\.\.\.oldNewPs    Backtest                           288           1    0.0    0.0     0.0    0.9
+          wealthSeries                  OptPort                            289           8    0.0    0.0     0.0    0.9
+           portValue                    OptPort                            373           6    0.0    0.1     0.0    0.1
+            secValue                    OptPort                            382          83    0.0    0.1     0.0    0.1
+             price                      Portfolio                          383          83    0.0    0.0     0.0    0.0
+            amount                      Portfolio                          374           6    0.0    0.0     0.0    0.0
+           wealthSeries.xport           OptPort                            302           7    0.0    0.0     0.0    0.7
+            toPort                      OptPort                            303           7    0.0    0.0     0.0    0.7
+             toPort.tval                OptPort                            377           7    0.0    0.0     0.0    0.1
+              portValue                 OptPort                            378           7    0.0    0.1     0.0    0.1
+               secValue                 OptPort                            380         105    0.0    0.1     0.0    0.1
+                price                   Portfolio                          381         105    0.0    0.0     0.0    0.0
+               amount                   Portfolio                          379           7    0.0    0.0     0.0    0.0
+             toPort.dcash               OptPort                            376           7    0.0    0.0     0.0    0.0
+             toPort.alloc               OptPort                            365           7    0.0    0.0     0.0    0.0
+             toPort.\                   OptPort                            305           7    0.0    0.0     0.0    0.0
+             toPort.tport               OptPort                            304           7    0.0    0.1     0.0    0.6
+              toPort.f                  OptPort                            364         105    0.0    0.5     0.0    0.5
+               price                    Portfolio                          368         105    0.0    0.0     0.0    0.0
+           wealthSeries.shares          OptPort                            300           7    0.0    0.0     0.0    0.0
+            records                     Portfolio                          301           7    0.0    0.0     0.0    0.0
+           wealthSeries.yport           OptPort                            299           7    0.0    0.0     0.0    0.0
+            cash                        Portfolio                          375           7    0.0    0.0     0.0    0.0
+        getEndPrice                     OptPort                            286           0    0.0    0.0     0.0    0.0
+       getEndPrice                      OptPort                            276           7   94.6    6.2    94.6    6.8
+        getEndPrice.dt                  OptPort                            282           7    0.0    0.1     0.0    0.1
+        getEndPrice.pars                OptPort                            279           7    0.0    0.1     0.0    0.1
+         symbol                         Portfolio                          280         105    0.0    0.0     0.0    0.0
+        buildCallBackSql                OptPort                            277           7    0.0    0.3     0.0    0.4
+         buildCallBackSql.marks         OptPort                            278           7    0.0    0.1     0.0    0.1
+       backTest.\.\.\.ds                Backtest                           275           1    0.0    0.0     0.0    0.0
+      backTest.\.\.size                 Backtest                           265           1    0.0    0.0     0.0    0.0
+       portfolioSize                    Strategy                           266           1    0.0    0.0     0.0    0.0
+      optPort                           OptPort                            261           8    4.6   17.9     4.6   18.1
+       optPort.eds                      OptPort                            264           8    0.0    0.1     0.0    0.1
+       optPort.sds                      OptPort                            263           8    0.0    0.1     0.0    0.1
+     backTest.\.zdates                  Backtest                           247           1    0.0    0.0     0.0    0.0
+     backTest.\.bDates                  Backtest                           246           1    0.0    0.0     0.5    3.2
+      backTest.\.bDateFun               Backtest                           254           0    0.0    0.0     0.0    0.0
+       getBalancingDates                Dates                              255          10    0.0    0.0     0.0    0.0
+        getBalancingDates.ys            Dates                              256           9    0.0    0.0     0.0    0.0
+         previousDate                   Dates                              258           8    0.0    0.0     0.0    0.0
+      backTest.\.zdates                 Backtest                           248           0    0.5    0.1     0.5    3.1
+       sqlToDates                       SqlInterface                       257          21    0.0    3.0     0.0    3.0
+ CAF                                    Print                              235           0    0.0    0.0     0.0    0.0
+ CAF                                    SqlInterface                       234           0    0.0    0.0     0.0    0.1
+  sqlStr                                SqlInterface                       262           1    0.0    0.1     0.0    0.1
+  dailyTable                            SqlInterface                       250           1    0.0    0.0     0.0    0.0
+  getDateSqlStr                         SqlInterface                       249           1    0.0    0.0     0.0    0.0
+  dbName                                SqlInterface                       244           1    0.0    0.0     0.0    0.0
+ CAF                                    Database.HDBC.Sqlite3.Connection   229           0    0.0    0.0     0.0    0.0
+ CAF                                    Database.HDBC.Sqlite3.Statement    227           0    0.0    0.0     0.0    0.0
+ CAF                                    Data.Time.Format.Parse             208           0    0.0    0.0     0.0    0.0
+ CAF                                    GHC.Float.ConversionUtils          174           0    0.0    0.0     0.0    0.0
+ CAF                                    GHC.IO.Encoding                    172           0    0.0    0.0     0.0    0.0
+ CAF                                    GHC.IO.Handle.FD                   170           0    0.0    0.3     0.0    0.3
+ CAF                                    Text.Read.Lex                      166           0    0.0    0.0     0.0    0.0
+ CAF                                    GHC.Float                          160           0    0.0    0.2     0.0    0.2
+ CAF                                    GHC.IO.Handle.Text                 159           0    0.0    0.0     0.0    0.0
+ CAF                                    Text.Printf                        151           0    0.0    0.0     0.0    0.0
+ CAF                                    GHC.Conc.Signal                    149           0    0.0    0.0     0.0    0.0
+ CAF                                    GHC.IO.Encoding.Iconv              140           0    0.0    0.0     0.0    0.0
+ CAF                                    GHC.Integer.Type                   128           0    0.0    0.0     0.0    0.0

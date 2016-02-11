@@ -3,7 +3,8 @@ module Lib where
 data Pair a b = Pair (a,b) deriving (Show, Eq)
 
 interLink ::[a]->[Pair a a] 
-interLink (x:[]) = []
+interLink [] = []
+interLink (_:[]) = []
 interLink (y:x:xs) = Pair (y,x): interLink (x:xs)
 
 uninterLink :: Int -> [Pair a a] -> [a]

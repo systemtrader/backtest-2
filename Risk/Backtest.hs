@@ -1,5 +1,4 @@
 module Backtest where
-import System.Environment
 import OptPort
 import Database.HDBC 
 import Database.HDBC.Sqlite3
@@ -7,11 +6,11 @@ import Dates
 import Lib
 import Control.Monad
 import Print
-import Text.PrettyPrint.Boxes
 import SqlInterface
 import Strategy
 import Ledger 
 
+backTest :: Strategy -> IO()
 backTest strategy = connectSqlite3 dbName 
     >>= \conn -> 
         let zdates = liftM (map sqlToDates) (quickQuery' conn getDateSqlStr [])
@@ -37,7 +36,7 @@ backTest strategy = connectSqlite3 dbName
         -- porfolio at the end of each investment period
             oldNewPs = wealthSeries startWealth (init securities) updatedSecs 
         in  mapM printLedger (map buildLedger oldNewPs)
-    >>  (printTable . printResult startWealth (tail datePairs) . map snd) oldNewPs
+    >> (printTable . printResult startWealth (tail datePairs) . map snd) oldNewPs
     
 
 

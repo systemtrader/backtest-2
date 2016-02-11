@@ -2,18 +2,19 @@ module OptPort where
 import Database.HDBC 
 import Database.HDBC.Sqlite3
 import Portfolio
-import Dates 
 import Data.Time 
 import Data.List 
 import Lib
 import SqlInterface
 
 toSecurity::[SqlValue] -> Security
-toSecurity xs@[_, _,_] = toSecurity (xs++[SqlDouble 0.0]) 
-toSecurity xs@[SqlByteString s, SqlByteString d, SqlDouble p, SqlDouble st] 
-    | length xs /= 4 = error "Wrong number of input given\n"
-    | otherwise = Equity (filter (/= '\"') (show s)) (realToFrac p) dt (realToFrac st) where
-    dt = parseTimeOrError True defaultTimeLocale "\"%Y%m%d\"" (show d) :: UTCTime
+toSecurity xs = case xs of 
+    [_, _,_] -> toSecurity (xs++[SqlDouble 0.0]) 
+    [SqlByteString s, SqlByteString d, SqlDouble p, SqlDouble st] ->
+        if length xs /= 4 then  error "Wrong number of input given\n"
+        else Equity (filter (/= '\"') (show s)) (realToFrac p) dt (realToFrac st) where
+            dt = parseTimeOrError True defaultTimeLocale "\"%Y%m%d\"" (show d) :: UTCTime
+    _      -> error "toSecurity error"
 
 toPort :: Double -> [Security] -> Portfolio
 toPort totWealth xs = 
@@ -36,6 +37,7 @@ portValue (Portfolio xs c) =
 wealthSeries :: Double -> [[Security]] ->  [[Security]] -> [(Portfolio, Portfolio)]
 -- Return porfolio prices are the start and end of the investment period
 -- the old portfolio is the fist in the pair.
+wealthSeries _ [] _ = []
 wealthSeries _ _ [] = []
 wealthSeries value (x:xs) (y:ys) = (xport, yport) : wealthSeries (portValue yport) xs ys where
         -- The point of recomputing the portfolio is to figure out the
@@ -51,14 +53,14 @@ wealthSeries value (x:xs) (y:ys) = (xport, yport) : wealthSeries (portValue ypor
 
 
 buildCallBackSql :: Integer -> String
-buildCallBackSql nassets = "select symbol, date, price from return \
+buildCallBackSql nassets = "select symbol, date, price from minireturn \
         \ where symbol in (" ++ marks ++ ") and date = ?;" where
     marks = intersperse ',' $ replicate (fromInteger nassets) '?' 
 
 getEndPrice :: Connection -> [Security] -> Day  -> IO [[SqlValue]] 
-getEndPrice conn secs date = quickQuery' conn (buildCallBackSql (fromIntegral (length secs))) pars where
+getEndPrice conn secs theDate = quickQuery' conn (buildCallBackSql (fromIntegral (length secs))) pars where
     pars = [toSql (symbol sec) | sec <- secs] ++ [toSql dt]
-    dt = filter (/= '-') (showGregorian date)  
+    dt = filter (/= '-') (showGregorian theDate)  
 
 optPort :: Connection -> Integer -> Pair Day Day  -> IO [[SqlValue]] 
 optPort conn n (Pair (sd, ed)) = quickQuery' conn sqlStr [toSql sds, toSql eds, toSql n] where

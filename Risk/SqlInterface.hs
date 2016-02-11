@@ -1,10 +1,9 @@
 module SqlInterface where
 import Data.Time
 import Database.HDBC 
-import Database.HDBC.Sqlite3
 
 dbName :: String
-dbName = "stocks.db"
+dbName = "../../backtestBack/Risk/stocks.db"
 
 dailyTable :: String
 dailyTable = "minireturn"
@@ -12,11 +11,8 @@ dailyTable = "minireturn"
 type Formula = String
 type Symbol = String
 
-returnFormula :: Formula
-returnFormula = "((f.price/b.price) - 1)"
-
 sqlStr::String
-sqlStr = "select symbol, date, price, avg(returns) as avgret\
+sqlStr = "select symbol, date, price, avg(returns) as avgret \
         \ from " ++ dailyTable ++ " where date >= ? and date <= ? and price > 15 and price < 5000\
         \ group by symbol\
         \ order by avgret desc limit ?;"
@@ -27,16 +23,20 @@ getDateSqlStr = "select distinct date from " ++ dailyTable ++ " where date != 'D
 lastDateSqlStr :: String
 lastDateSqlStr = "select date from " ++ dailyTable ++ " order by date desc limit 1;"
 
-activeSymbolSqlStr :: String
-activeSymbolSqlStr = "select symbol from "++dailyTable++" where date = ? \
-    \intersect select symbol from "++dailyTable++" where date = ?;" 
-
 sqlToDates :: [SqlValue] -> Day
-sqlToDates [SqlByteString x] =  
-    parseTimeOrError True defaultTimeLocale "\"%Y%m%d\"" (show x) :: Day
+sqlToDates  xs = case xs of 
+    [SqlByteString x] -> parseTimeOrError True defaultTimeLocale "\"%Y%m%d\"" (show x) :: Day
+    _                 -> error "sqlToDates: error"
 
+    
 sqlToSymbol :: [SqlValue] -> String
-sqlToSymbol [SqlByteString x] = show x :: String 
+sqlToSymbol  xs = case xs of 
+    [SqlByteString x] -> show x :: String 
+    _                 -> error "sqlToSymbol: error" 
 
 sqlToPrice :: [SqlValue] -> Double
-sqlToPrice [SqlByteString x] = (read . show)  x :: Double
+sqlToPrice xs = case xs of     
+    [SqlByteString x] -> (read . show)  x :: Double
+    _                 -> error "sqlToPrice error" 
+
+
