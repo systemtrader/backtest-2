@@ -20,29 +20,18 @@ toPort totWealth xs =
     let 
         alloc = totWealth / fromIntegral (length (xs))
         f x = floor (alloc /price x)
-<<<<<<< HEAD
         tport = Portfolio {records = (zip xs (map f xs)),  cash = Cash "Dollars" 0.0}  
         tval = portValue tport
         dcash = Cash "Dollars" (totWealth - tval)
     in (\(Portfolio sx _) zcash -> Portfolio sx zcash) tport dcash
-=======
-        tport = Portfolio (zipWith (\a b -> (a, b)) xs (map f xs))  
-        tval = portValue tport
-    in (\(Portfolio sx) -> Portfolio (sx ++ [(Cash {symbol = "Dollars", price = (totWealth - tval)}, 1)])) tport
->>>>>>> e2bb0da6eef2215aa4f58b8e8b04e0f74a2b18d4
 
 secValue :: Security -> Shares -> Double
 secValue asset shares = 
     (price asset)*(fromIntegral shares)
 
 portValue :: Portfolio -> Double
-<<<<<<< HEAD
 portValue (Portfolio xs c) = 
     (amount c) + sum [secValue asset share| (asset, share) <- xs]
-=======
-portValue (Portfolio xs) = 
-    sum [secValue asset share| (asset, share) <- xs]
->>>>>>> e2bb0da6eef2215aa4f58b8e8b04e0f74a2b18d4
 
 wealthSeries :: Double -> [[Security]] ->  [[Security]] -> [(Portfolio, Portfolio)]
 -- Return porfolio prices are the start and end of the investment period
@@ -54,7 +43,6 @@ wealthSeries value (x:xs) (y:ys) = (xport, yport) : wealthSeries (portValue ypor
         -- shares really out to be passed down.
         xport = toPort value x
         -- The (security, share) data is stored in ds
-<<<<<<< HEAD
         shares = map snd (records xport)
         -- y has its own securities. It just needs the relevant shares
         -- information. The last item corresponds to cash. The cash
@@ -66,19 +54,6 @@ buildCallBackSql :: Integer -> String
 buildCallBackSql nassets = "select symbol, date, price from return \
         \ where symbol in (" ++ marks ++ ") and date = ?;" where
     marks = intersperse ',' $ replicate (fromInteger nassets) '?' 
-=======
-        ds = (\(Portfolio s) -> s) xport
-        -- y has its own securities. It just needs the relevant shares
-        -- information. The last item corresponds to cash. The cash
-        -- information is presumably not coded in the y's.
-        yport = Portfolio ((zipWith (\a b -> (a,b)) y [s| (_, s) <- init ds]) ++ [last ds])
-
-
-buildCallBackSql :: Integer -> String
-buildCallBackSql nassets = "select symbol, date, price from miniprice \
-        \ where symbol in (" ++ marks ++ ") and date = ?;" where
-    marks = intersperse ',' $ take (fromInteger nassets) (repeat '?') 
->>>>>>> e2bb0da6eef2215aa4f58b8e8b04e0f74a2b18d4
 
 getEndPrice :: Connection -> [Security] -> Day  -> IO [[SqlValue]] 
 getEndPrice conn secs date = quickQuery' conn (buildCallBackSql (fromIntegral (length secs))) pars where

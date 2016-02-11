@@ -19,13 +19,8 @@ data Ledger = Ledger {
                  totalPnL :: Double
                  }
 
-<<<<<<< HEAD
 buildLedger :: (Portfolio, Portfolio) -> Ledger
 buildLedger (oldPort, newPort) = 
-=======
-buildLedger :: Portfolio -> Portfolio -> Ledger
-buildLedger oldPort newPort = 
->>>>>>> e2bb0da6eef2215aa4f58b8e8b04e0f74a2b18d4
     let
         -- theDate : the rbalancing date
         -- bs, es  : starting and ending statistics
@@ -42,11 +37,7 @@ buildLedger oldPort newPort =
         theDate  = getDt newPort
         -- Newportfolio date is presumably the rebalancing date
         fs    = map apply [statistic, statistic, price, price] 
-<<<<<<< HEAD
         ps    = [oldPort, newPort, oldPort , newPort]
-=======
-        ps    = [oldPort, oldPort, newPort, newPort]
->>>>>>> e2bb0da6eef2215aa4f58b8e8b04e0f74a2b18d4
         [bs, es, bp , ep] = zipWith ( $ ) fs ps
         [esh, bsh]  = map (map snd . records) [newPort, oldPort]
         n        = zipWith (-) (ep `dotProd` esh) (bp `dotProd` bsh)

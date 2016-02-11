@@ -2,10 +2,7 @@ module Print where
 import Text.PrettyPrint.Boxes
 import Lib
 import OptPort
-<<<<<<< HEAD
 import Ledger
-=======
->>>>>>> e2bb0da6eef2215aa4f58b8e8b04e0f74a2b18d4
 import Data.Time
 import Portfolio
 import Text.Printf
@@ -47,7 +44,6 @@ printTable box =
 
 printLedger :: Ledger -> IO()
 printLedger ledger = 
-<<<<<<< HEAD
         let theDate = showGregorian . Ledger.date $  ledger
             bf   = text . (\x -> x::String) . printf "%.0f%%" . (100*) 
             df   = text . (\x -> x::String) . printf "%.2f" 
@@ -57,7 +53,8 @@ printLedger ledger =
             getp x  = map pf (x ledger) 
             gets :: (Ledger -> [Double]) -> [Box] 
             gets x  = map bf (x ledger) 
-            [bs, es, bp, ep, npl] =  [gets begStats, gets endStats,  getp begPrices,  getp endPrices, getd netPnLs]
+            [bs, es, bp, ep, npl] =  [gets begStats, gets endStats,  
+                getp begPrices,  getp endPrices, getd netPnLs]
             iff = text . show
             geti x   = map iff (x ledger) 
             [esh, bsh] = map geti [endShares, begShares]
@@ -69,16 +66,4 @@ printLedger ledger =
                    vcat right esh <+> vcat right npl 
         in  putStrLn ("\n\nTrading date: " ++ theDate ++ "\n") 
             >>  printBox (body) >> putStrLn ("\nNet Gain: " ++ (printf "%.2f" total)::String)
-=======
-    let 
-        df   = text . alignExp . (\x -> x::String) . printf "%.2e" 
-        get x  = map df (x ledger) 
-        [bs, es, bp, ep, npnl] = map get [begStats, endStats, begPrices, endPrices, netPnLs]
-
-
-
-
-
-    in undefined
->>>>>>> e2bb0da6eef2215aa4f58b8e8b04e0f74a2b18d4
 
