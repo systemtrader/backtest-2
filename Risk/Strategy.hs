@@ -6,11 +6,11 @@ data Target = MeanReturn
     | Volatility 
     deriving (Show, Eq)
 
-targetToFunc :: Target -> [Double] -> Double
-targetToFunc MeanReturn = sum  
+targetToFunc :: Target -> ([Double] -> Double)
+targetToFunc MeanReturn = \xs -> (sum xs) 
 targetToFunc _ = sum
 
-directionToTake :: OrderDirection -> Int -> [a] -> [a]
+directionToTake :: OrderDirection -> (Int -> [a] -> [a])
 directionToTake Asc = take
 directionToTake Desc = \n xs -> drop (length xs - n) xs
 
