@@ -1,14 +1,17 @@
 module Ledger where
 import Portfolio
 import Data.Time
+import Data.List
 
 -- The ledger makes it possibe to obain detailed information about the
 -- trades at each rebalancing stage. It gets fed into a printing function
 -- afterwards and makes it possible to get a sense of the correctness 
 -- of the backtest
 data Ledger = Ledger {
-                 date :: Day,
-                 symbols :: [String],
+                 begDate :: [Day],
+                 endDate :: [Day],
+                 begSymbols :: [String],
+                 endSymbols :: [String],
                  begStats :: [Double],
                  endStats :: [Double],
                  begPrices :: [Double],
@@ -17,32 +20,28 @@ data Ledger = Ledger {
                  endShares :: [Integer], 
                  netPnLs :: [Double],
                  totalPnL :: Double
-                 }
+                 } deriving (Show)
 
 buildLedger :: (Portfolio, Portfolio) -> Ledger
 buildLedger (oldPort, newPort) = 
-    let
-        -- theDate : the rbalancing date
-        -- bs, es  : starting and ending statistics
-        -- bp, ep  : starting and ending price
-        -- sh      : shares in each symbol
-        -- n       : net pnl on each symbol
-        -- t       : total pnl
+    let fsort x y = compare ((Portfolio.symbol . fst)  x) ((Portfolio.symbol . fst) y)
+        oldRecs = sortBy fsort $ records oldPort
+        newRecs = sortBy fsort $ records newPort
         dotProd a b = zipWith (*) a (map fromIntegral b)
-        -- Dot product used later
-        syms  =  apply symbol oldPort
-        getDt    = utctDay . Portfolio.date . fst . head . records 
-        -- Date extraction function
-        apply x  = map (x . fst) . records
-        theDate  = getDt newPort
-        -- Newportfolio date is presumably the rebalancing date
+        begsyms  =  apply symbol oldRecs
+        endsyms  =  apply symbol newRecs
+        getDt    = utctDay . Portfolio.date 
+        apply x  = map (x . fst) 
+        bd       = apply getDt oldRecs
+        ed       = apply getDt newRecs
         fs    = map apply [statistic, statistic, price, price] 
-        ps    = [oldPort, newPort, oldPort , newPort]
+        ps    = [oldRecs, newRecs, oldRecs , newRecs]
         [bs, es, bp , ep] = zipWith ( $ ) fs ps
-        [esh, bsh]  = map (map snd . records) [newPort, oldPort]
+        bsh  =  map snd $ oldRecs
+        esh  =  map snd $ newRecs
         n        = zipWith (-) (ep `dotProd` esh) (bp `dotProd` bsh)
         t        = sum n
-    in Ledger theDate syms bs es bp ep bsh esh  n t 
+    in Ledger bd ed begsyms endsyms bs es bp ep bsh esh  n t 
     
     
 

@@ -3,7 +3,7 @@ import Data.Time
 import Database.HDBC 
 
 dbName :: String
-dbName = "../../backtestBack/Risk/stocks.db"
+dbName = "/home/wale/Documents/backtest/Risk/stocks.db"
 
 dailyTable :: String
 dailyTable = "minireturn"
@@ -12,10 +12,10 @@ type Formula = String
 type Symbol = String
 
 sqlStr::String
-sqlStr = "select symbol, date, price, avg(returns) as avgret \
-        \ from " ++ dailyTable ++ " where date >= ? and date <= ? and price > 15 and price < 5000\
-        \ group by symbol\
-        \ order by avgret desc limit ?;"
+sqlStr = "select * from (select symbol, date, price, avg(returns) as avgret \
+        \ from " ++ dailyTable ++ " where date >= ? and date <= ? and price > 5 \ 
+        \ group by symbol \
+        \ order by avgret desc) where date = ? limit ? ;"
  
 getDateSqlStr :: String
 getDateSqlStr = "select distinct date from " ++ dailyTable ++ " where date != 'DATE';"

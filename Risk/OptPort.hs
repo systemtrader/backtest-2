@@ -43,13 +43,16 @@ wealthSeries value (x:xs) (y:ys) = (xport, yport) : wealthSeries (portValue ypor
         -- The point of recomputing the portfolio is to figure out the
         -- shares. This makes no sense what so ever. The information about
         -- shares really out to be passed down.
-        xport = toPort value x
+        fsort a b = compare ((Portfolio.symbol)  a) ((Portfolio.symbol) b)
+        xsorted = sortBy fsort x 
+        ysorted = sortBy fsort y 
+        xport = toPort value xsorted
         -- The (security, share) data is stored in ds
         shares = map snd (records xport)
         -- y has its own securities. It just needs the relevant shares
         -- information. The last item corresponds to cash. The cash
         -- information is presumably not coded in the y's.
-        yport = Portfolio (zip y shares) (cash xport)
+        yport = Portfolio (zip ysorted shares) (cash xport)
 
 
 buildCallBackSql :: Integer -> String
@@ -63,7 +66,7 @@ getEndPrice conn secs theDate = quickQuery' conn (buildCallBackSql (fromIntegral
     dt = filter (/= '-') (showGregorian theDate)  
 
 optPort :: Connection -> Integer -> Pair Day Day  -> IO [[SqlValue]] 
-optPort conn n (Pair (sd, ed)) = quickQuery' conn sqlStr [toSql sds, toSql eds, toSql n] where
+optPort conn n (Pair (sd, ed)) = quickQuery' conn sqlStr [toSql sds, toSql eds, toSql eds, toSql n] where
     sds = filter (/= '-') (showGregorian sd)  
     eds = filter (/= '-') (showGregorian ed)  
 

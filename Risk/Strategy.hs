@@ -32,7 +32,7 @@ baseMacroStrategy = MacroStrategy {
     name = "",
     investmentHorizon = Day 3,
     initialWealth = 10000,
-    portfolioSize = 15,
+    portfolioSize = 10,
     target = MeanReturn,
     direction = Desc}
 

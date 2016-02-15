@@ -35,11 +35,5 @@ backTest strategy = connectSqlite3 dbName
         -- Get getWealthseries produces values for the 
         -- porfolio at the end of each investment period
             oldNewPs = wealthSeries startWealth (init securities) updatedSecs 
-        in  mapM printLedger (map buildLedger oldNewPs)
+        in  mapM printLedger (map buildLedger oldNewPs) 
     >> (printTable . printResult startWealth (tail datePairs) . map snd) oldNewPs
-    
-
-
-       
-    
-

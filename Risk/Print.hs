@@ -40,10 +40,10 @@ printTable box =
 
 printLedger :: Ledger -> IO()
 printLedger ledger = 
-        let theDate = showGregorian . Ledger.date $  ledger
-            bf   = text . (\x -> x::String) . printf "%.0f%%" . (100*) 
+        let bf   = text . (\x -> x::String) . printf "%.0f%%" . (100*) 
             df   = text . (\x -> x::String) . printf "%.2f" 
             pf   = text . (\x -> x::String) . printf "%.2f" 
+            dtf  = text . showGregorian  
             getd x  = map df (x ledger) 
             getp :: (Ledger -> [Double]) -> [Box] 
             getp x  = map pf (x ledger) 
@@ -54,12 +54,14 @@ printLedger ledger =
             iff = text . show
             geti x   = map iff (x ledger) 
             [esh, bsh] = map geti [endShares, begShares]
-            syms = map text $ symbols ledger 
+            bd = map dtf $ begDate ledger
+            ed = map dtf $ endDate ledger
+            esyms = map text $ endSymbols ledger 
+            bsyms = map text $ begSymbols ledger 
             total = totalPnL ledger
-            body = vcat left syms <+> vcat right bp  <+> 
-                   vcat right ep  <+> vcat right bs  <+>
-                   vcat right es  <+> vcat right bsh <+>
-                   vcat right esh <+> vcat right npl 
-        in  putStrLn ("\n\nTrading date: " ++ theDate ++ "\n") 
-            >>  printBox (body) >> putStrLn ("\nNet Gain: " ++ (printf "%.2f" total)::String)
+            body =  vcat left  bsyms <+> vcat left bd    <+>  
+                    vcat left esyms  <+> vcat left ed    <+> vcat right bp  <+> 
+                    vcat right ep    <+> vcat right bs   <+> vcat right es  <+> 
+                    vcat right bsh   <+> vcat right esh  <+> vcat right npl 
+        in  putStrLn ("\n\nBalancing date: " ++ (showGregorian . head . endDate) ledger  ++ "\n") >> printBox body >> putStrLn ("\nNet Gain: " ++ printf "%.2f" total::String)
 
