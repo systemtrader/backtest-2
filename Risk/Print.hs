@@ -24,13 +24,13 @@ printResult startWealth linkedDates portfolios =
         ul  = text "-------"
         ull  = text "----------"
         std = showGregorian $ (\(Pair x) -> fst x) (linkedDates!!0)
-        tlp = text . alignExp . (\x -> x::String) . printf "%.2e"
+        tlp = text . (\x -> x::String) . printf "%.2f"
         g   = map (text . showGregorian) . uninterLink 2 
         f   = map (tlp . portValue) 
         dts = [dh, ull] ++ [text std] ++ (g linkedDates)
         pvs = [vh, ul] ++ [tlp startWealth] ++ (f portfolios)
     in  (vcat left dts) <+> 
-        (emptyBox (length portfolios) 4) <+> (vcat left pvs)
+        (emptyBox (length portfolios) 4) <+> (vcat right pvs)
 
 printTable :: Box -> IO()
 printTable box = 

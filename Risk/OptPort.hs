@@ -1,4 +1,6 @@
 module OptPort where 
+import Control.Monad.Reader
+import Control.Monad.Identity
 import Database.HDBC 
 import Database.HDBC.Sqlite3
 import Portfolio
@@ -6,6 +8,19 @@ import Data.Time
 import Data.List 
 import Lib
 import SqlInterface
+
+data Env = Env {
+         theConnection :: Connection,
+         theDate :: String,
+         theSecurity :: Security
+}
+
+type TheDate = String
+data Status = Active | Inactive
+type Context a = ReaderT Env IO a
+
+runContext  = runReaderT 
+
 
 toSecurity::[SqlValue] -> Security
 toSecurity xs = case xs of 
@@ -60,14 +75,73 @@ buildCallBackSql nassets = "select symbol, date, price from minireturn \
         \ where symbol in (" ++ marks ++ ") and date = ?;" where
     marks = intersperse ',' $ replicate (fromInteger nassets) '?' 
 
-getEndPrice :: Connection -> [Security] -> Day  -> IO [[SqlValue]] 
-getEndPrice conn secs theDate = quickQuery' conn (buildCallBackSql (fromIntegral (length secs))) pars where
-    pars = [toSql (symbol sec) | sec <- secs] ++ [toSql dt]
-    dt = filter (/= '-') (showGregorian theDate)  
+getEndPrice :: Connection -> [Security] -> Day  -> IO [Security] 
+getEndPrice conn secs theDate =     
+    let pars = [toSql (symbol sec) | sec <- secs] ++ [toSql dt]
+        dt = filter (/= '-') (showGregorian theDate)  
+        raws = quickQuery' conn (buildCallBackSql (fromIntegral (length secs))) pars 
+    in raws >>= \rs -> return ( map toSecurity rs)
+    >>= \ nsecs -> mapM  (verify dt conn) (findMissing secs nsecs)
+    >>= \ ups -> return $ nsecs ++ ups
 
 optPort :: Connection -> Integer -> Pair Day Day  -> IO [[SqlValue]] 
 optPort conn n (Pair (sd, ed)) = quickQuery' conn sqlStr [toSql sds, toSql eds, toSql eds, toSql n] where
     sds = filter (/= '-') (showGregorian sd)  
     eds = filter (/= '-') (showGregorian ed)  
+
+-----------------------------------------------------------------------------------------------------------
+queryDB :: Env -> String -> IO [[SqlValue]]
+queryDB env sqlStr = 
+        let ([sym, dt], conn) = ([f env | f <- [symbol . theSecurity, theDate]], theConnection env)
+        in  quickQuery' conn sqlStr [toSql sym, toSql dt] 
+
+checkStatus :: Context Status
+checkStatus  = 
+    ask >>= \ env -> liftIO (queryDB env checkStr)
+        >>= \ rs  -> case rs of
+                         [[]] -> return Inactive
+                         _    -> return Active
+
+getLastTrade :: Status -> Context (Maybe [[SqlValue]])
+getLastTrade Inactive  = return Nothing
+getLastTrade Active    = 
+    ask >>= \ env -> 
+            let ltStr = "select date, price from " ++ dailyTable ++ " where symbol = ? and date < ? order by date desc limit 1;"
+            in  liftIO (queryDB env ltStr)
+        >>= \ rs  -> case rs of
+                         [[]] -> error "last traded price not found"
+                         _    -> return $ Just rs
+
+updateSecurity :: Maybe [[SqlValue]] -> Context Security
+updateSecurity Nothing  = error "Nothing found in updateSecurity" 
+updateSecurity newprice = 
+    ask >>= \ env -> 
+                let f d = parseTimeOrError True defaultTimeLocale "\"%Y%m%d\"" (show d) :: UTCTime
+                in  case newprice of
+                         Just [[SqlByteString dt, SqlDouble p]] -> return $ (theSecurity env) {price = p, date = f dt}
+                         _               -> error "updateSecurity error"
+        
+findMissing :: [Security] -> [Security] -> [Security]
+findMissing old new = 
+    let 
+        ff :: Security -> [Security] -> Bool
+        ff s ss = 
+            let nss = map symbol ss
+            in  not (symbol s `elem` nss)
+    in  filter (`ff` new) old
+
+verify :: TheDate -> Connection -> Security -> IO Security
+verify dt con bs = 
+    let env =  Env con dt bs
+    in  runContext (    checkStatus 
+                    >>= getLastTrade 
+                    >>= updateSecurity) env
+
+
+
+                     
+              
+
+
 
 

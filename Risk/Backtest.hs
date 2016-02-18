@@ -28,12 +28,11 @@ backTest strategy = connectSqlite3 dbName
     -- The dates are shifted by one investment period
     -- and the price of the socalled optimal portfolios are assessed
     -- The rawsymbols and prices are intermediate
-    >>= \rawSymbols ->  disconnect conn
-    >>  return (map (map toSecurity ) rawSymbols)
     >>= \updatedSecs -> 
         let startWealth = initialWealth strategy 
         -- Get getWealthseries produces values for the 
         -- porfolio at the end of each investment period
             oldNewPs = wealthSeries startWealth (init securities) updatedSecs 
         in  mapM printLedger (map buildLedger oldNewPs) 
-    >> (printTable . printResult startWealth (tail datePairs) . map snd) oldNewPs
+    >>  disconnect conn
+    >>  (printTable . printResult startWealth (tail datePairs) . map snd) oldNewPs

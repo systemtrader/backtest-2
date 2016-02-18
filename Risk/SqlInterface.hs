@@ -12,10 +12,10 @@ type Formula = String
 type Symbol = String
 
 sqlStr::String
-sqlStr = "select * from (select symbol, date, price, avg(returns) as avgret \
-        \ from " ++ dailyTable ++ " where date >= ? and date <= ? and price > 5 \ 
-        \ group by symbol \
-        \ order by avgret desc) where date = ? limit ? ;"
+sqlStr = "select symbol, date, price, sum(returns) as avgret from (select * \
+        \ from " ++ dailyTable ++ " where date >= ? and date <= ? and price > 10 \ 
+        \ ) where date = ? \
+        \ group by symbol order by avgret desc  limit ? ;"
  
 getDateSqlStr :: String
 getDateSqlStr = "select distinct date from " ++ dailyTable ++ " where date != 'DATE';"
@@ -39,4 +39,5 @@ sqlToPrice xs = case xs of
     [SqlByteString x] -> (read . show)  x :: Double
     _                 -> error "sqlToPrice error" 
 
-
+checkStr :: String
+checkStr = "select symbol from " ++ dailyTable ++ " where symbol = ? and date >= ?;" 
