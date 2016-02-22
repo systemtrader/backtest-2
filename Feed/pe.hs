@@ -1,5 +1,7 @@
 import Data.Int (Int64)
+import Control.Monad.Except
 import Control.Monad.State
+import Control.Monad.Writer
 import System.Environment
 import qualified Data.ByteString.Lazy.Char8 as C 
 
@@ -35,11 +37,9 @@ data Msg = Msg {
     quoteTime   :: Maybe String   -- 8
     } deriving Show
 
-
-
-
-type StateByte a = State C.ByteString a
-type Found = Bool
+type StateByte a = StateT C.ByteString IO a
+type ErrorStateByteIO a = ExceptT String (StateT C.ByteString IO) a
+type WriterStateByteIO a = WriterT [Msg] (StateT C.ByteString IO) a
 
 key :: String
 key = "B6034"
@@ -85,9 +85,8 @@ readString = id
 to64 :: Int -> Int64
 to64 n = (fromIntegral n)::Int64
 
-
-parseMsg :: StateByte (Maybe Msg)
-parseMsg = findKey   >>= parseDataType              >>=
+parseMsg :: Maybe () -> StateByte (Maybe Msg)
+parseMsg outcome = parseDataType outcome            >>=
     \dat    -> parse readString (to64 2)    dat     >>=
     \inf    -> parse readString (to64 1)    inf     >>=
     \mkt    -> parse readString (to64 12)   mkt     >>=
@@ -121,8 +120,17 @@ parseMsg = findKey   >>= parseDataType              >>=
                  tav fiap fiaq snap snaq thap thaq foap 
                  foaq fvap fvaq qtim)
 
+parseFeed :: WriterStateByteIO (Maybe Msg)
+parseFeed  =  lift findKey 
+    >>= \out -> lift (parseMsg out) 
+    >>= \msg -> case msg of
+                  Nothing -> error "Nothing left to parse"
+                  Just x  -> tell [x] 
+    >>  liftIO (print msg) >> parseFeed
+
+runWSBIO = runStateT . runWriterT
 
 main :: IO()
 main = getArgs 
     >>= \[fileName] -> C.readFile fileName
-    >> putStrLn "Hello"
+    >>= \dat -> runWSBIO parseFeed dat >> return ()
